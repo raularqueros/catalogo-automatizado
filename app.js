@@ -442,21 +442,21 @@ class App {
 
   async _handleSave({ data, editingProductId, expectedRevision, imageAction, imageFile }) {
     this._status.showSaving();
-    if (data.categoryId) {
-      const cat = this._project.categories.find(c => c.id === data.categoryId);
-      if (cat) data.category = cat.name;
-    } else { data.category = ''; }
-
-    let imageRecord = null;
-    if (imageAction === 'replace') {
-      if (!imageFile) throw new Error('IMAGE_FILE_MISSING');
-      const validation = validateImage(imageFile);
-      if (!validation.valid) { this._notifications.error(validation.error); throw new Error(validation.error); }
-      const optimized = await optimizeImage(imageFile);
-      imageRecord = createImageRecord(this._project.projectId, optimized.blob, optimized.mimeType, optimized.width, optimized.height, optimized.optimizedSize);
-    }
-
     try {
+      if (data.categoryId) {
+        const cat = this._project.categories.find(c => c.id === data.categoryId);
+        if (cat) data.category = cat.name;
+      } else { data.category = ''; }
+
+      let imageRecord = null;
+      if (imageAction === 'replace') {
+        if (!imageFile) throw new Error('IMAGE_FILE_MISSING');
+        const validation = validateImage(imageFile);
+        if (!validation.valid) throw new Error(validation.error);
+        const optimized = await optimizeImage(imageFile);
+        imageRecord = createImageRecord(this._project.projectId, optimized.blob, optimized.mimeType, optimized.width, optimized.height, optimized.optimizedSize);
+      }
+
       if (editingProductId && expectedRevision !== null) {
         await this._productService.updateProduct(editingProductId, expectedRevision, this._project.projectId, data, imageAction, imageRecord);
         this._notifications.success('Producto actualizado.');
@@ -466,9 +466,11 @@ class App {
       }
       try { await this._refreshProducts(); await this._updateProjectAndStatus(); } catch (e) { console.warn(e); }
     } catch (err) {
+      console.error('Error al guardar:', err);
       if (err.name === 'ConflictError') this._notifications.error('Este producto cambi\u00f3...');
       else if (err.code === 'PRODUCT_NOT_FOUND') this._notifications.error('Este producto ya no existe.');
       else this._notifications.error(`Error: ${err.message}`);
+      try { await this._updateProjectAndStatus(); } catch (_) { this._status.update(this._project); }
       throw err;
     }
   }

@@ -218,7 +218,6 @@ export class ProductForm {
       this._onSaveSuccess();
     }
   }
-  }
 
   _setSavingState(saving) {
     this._elements.submitBtn.disabled = saving;
