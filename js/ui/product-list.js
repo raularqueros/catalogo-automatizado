@@ -43,12 +43,13 @@ export class ProductList {
     this._container.classList.remove('product-list--empty');
 
     const fragment = document.createDocumentFragment();
+    const isMobile = window.innerWidth <= 767;
 
     for (const product of products) {
       let card;
 
       if (viewMode === 'compact') {
-        card = this._buildCompactCard(product);
+        card = isMobile ? this._buildMobileCompactCard(product) : this._buildCompactCard(product);
       } else if (viewMode === 'list') {
         card = this._buildListRow(product);
       } else {
@@ -67,6 +68,7 @@ export class ProductList {
     }
 
     this._attachEvents(viewMode);
+    this._attachMenuEvents();
   }
 
   _buildCard(product) {
@@ -104,6 +106,31 @@ export class ProductList {
     const activeClass = product.active === false ? 'btn--outline' : 'btn--primary';
 
     card.innerHTML = `${imgHtml}<div class="product-card__body"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><p class="product-card__price">${formatPrice(product.price)}</p>${catHtml}</div><div class="product-card__actions"><button class="btn btn--small ${activeClass} product-card__toggle-active" data-id="${product.id}" type="button">${activeLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
+    return card;
+  }
+
+  _buildMobileCompactCard(product) {
+    const card = document.createElement('article');
+    card.className = 'product-card product-card--mobile product-card--compact' + (product.active === false ? ' product-card--inactive' : '');
+    card.dataset.productId = product.id;
+
+    const imgHtml = product.imageId
+      ? `<div class="product-card__image-wrapper"><img class="product-card__image" data-image-id="${product.imageId}" alt="${escapeHtml(product.name)}" /></div>`
+      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true">\u{1F5BC}\uFE0E</span></div>`;
+
+    const catName = this._getCategoryName ? this._getCategoryName(product.categoryId) : (product.category || '');
+    const activeLabel = product.active === false ? 'Inactivo' : 'Activo';
+    const metaParts = [];
+    if (catName) metaParts.push(escapeHtml(catName));
+    metaParts.push(activeLabel);
+    const metaHtml = `<span class="product-card__meta">${metaParts.join(' \u00b7 ')}</span>`;
+
+    const nameEscaped = escapeHtml(product.name);
+    const priceFormatted = formatPrice(product.price);
+    const toggleLabel = product.active === false ? 'Activar' : 'Inactivar';
+
+    card.innerHTML = `${imgHtml}<div class="product-card__body"><h3 class="product-card__name">${nameEscaped}</h3><div class="product-card__price">${priceFormatted}</div>${metaHtml}</div><div class="product-card__menu"><button class="product-card__menu-btn" type="button" aria-label="Acciones de ${nameEscaped}" aria-expanded="false">\u22EE</button><div class="product-card__menu-dropdown"><button class="product-card__menu-item" type="button" data-action="edit">Editar</button><button class="product-card__menu-item" type="button" data-action="duplicate">Duplicar</button><button class="product-card__menu-item" type="button" data-action="toggle">${toggleLabel}</button><button class="product-card__menu-item product-card__menu-item--danger" type="button" data-action="delete">Eliminar</button></div></div>`;
+
     return card;
   }
 
@@ -153,5 +180,83 @@ export class ProductList {
     this._container.querySelectorAll('.product-card__toggle-active').forEach(btn => {
       btn.addEventListener('click', () => { if (typeof this._onToggleActive === 'function') this._onToggleActive(btn.dataset.id); });
     });
+  }
+
+  _attachMenuEvents() {
+    // Menu toggle buttons
+    this._container.querySelectorAll('.product-card__menu-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const dropdown = btn.nextElementSibling;
+        if (!dropdown || !dropdown.classList.contains('product-card__menu-dropdown')) return;
+        const isOpen = dropdown.classList.contains('product-card__menu-dropdown--open');
+
+        this._container.querySelectorAll('.product-card__menu-dropdown--open').forEach(d => {
+          if (d !== dropdown) {
+            d.classList.remove('product-card__menu-dropdown--open');
+            if (d.previousElementSibling) d.previousElementSibling.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        const opening = !isOpen;
+        dropdown.classList.toggle('product-card__menu-dropdown--open', opening);
+        btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+        if (opening) {
+          const firstItem = dropdown.querySelector('.product-card__menu-item');
+          if (firstItem) firstItem.focus();
+        }
+      });
+    });
+
+    // Menu items
+    this._container.querySelectorAll('.product-card__menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        const card = item.closest('.product-card');
+        if (!card) return;
+        const id = card.dataset.productId;
+
+        const dropdown = item.closest('.product-card__menu-dropdown');
+        if (dropdown) {
+          dropdown.classList.remove('product-card__menu-dropdown--open');
+          if (dropdown.previousElementSibling) dropdown.previousElementSibling.setAttribute('aria-expanded', 'false');
+        }
+
+        if (action === 'edit' && typeof this._onEdit === 'function') this._onEdit(id);
+        else if (action === 'duplicate' && typeof this._onDuplicate === 'function') this._onDuplicate(id);
+        else if (action === 'toggle' && typeof this._onToggleActive === 'function') this._onToggleActive(id);
+        else if (action === 'delete' && typeof this._onDelete === 'function') this._onDelete(id);
+      });
+    });
+
+    // Document-level handlers (attached once)
+    if (!this._menuEscapeHandler) {
+      this._menuEscapeHandler = (e) => {
+        if (e.key === 'Escape') {
+          const openDropdown = this._container ? this._container.querySelector('.product-card__menu-dropdown--open') : null;
+          if (openDropdown) {
+            openDropdown.classList.remove('product-card__menu-dropdown--open');
+            if (openDropdown.previousElementSibling) {
+              openDropdown.previousElementSibling.setAttribute('aria-expanded', 'false');
+              openDropdown.previousElementSibling.focus();
+            }
+          }
+        }
+      };
+      document.addEventListener('keydown', this._menuEscapeHandler);
+    }
+
+    if (!this._menuOutsideHandler) {
+      this._menuOutsideHandler = (e) => {
+        const openDropdown = this._container ? this._container.querySelector('.product-card__menu-dropdown--open') : null;
+        if (!openDropdown) return;
+        if (!openDropdown.contains(e.target) && !openDropdown.previousElementSibling.contains(e.target)) {
+          openDropdown.classList.remove('product-card__menu-dropdown--open');
+          if (openDropdown.previousElementSibling) openDropdown.previousElementSibling.setAttribute('aria-expanded', 'false');
+        }
+      };
+      document.addEventListener('click', this._menuOutsideHandler);
+    }
   }
 }

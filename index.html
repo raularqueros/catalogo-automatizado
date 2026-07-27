@@ -37,7 +37,22 @@
 
       <div class="list-toolbar">
         <input type="search" id="search-input" class="form-input list-toolbar__search" placeholder="Buscar productos&hellip;">
-        <div class="list-toolbar__filters">
+        <div class="list-toolbar__row-mobile">
+          <button id="filters-toggle" class="btn btn--small btn--outline" type="button" aria-expanded="false" aria-controls="filters-panel" title="Abrir panel de filtros">
+            <span id="filters-toggle-text">Filtros</span>
+            <span id="filters-badge" class="filters-badge hidden" aria-hidden="true"></span>
+          </button>
+          <select id="sort-by" class="form-input">
+            <option value="recent">M&aacute;s recientes</option>
+            <option value="oldest">M&aacute;s antiguos</option>
+            <option value="name_asc">Nombre A&ndash;Z</option>
+            <option value="name_desc">Nombre Z&ndash;A</option>
+            <option value="price_asc">Precio menor a mayor</option>
+            <option value="price_desc">Precio mayor a menor</option>
+          </select>
+          <button id="mobile-new-product-btn" class="btn btn--small btn--primary" type="button" title="Nuevo producto">+ Nuevo</button>
+        </div>
+        <div class="list-toolbar__filters list-toolbar__filters--desktop">
           <select id="filter-category" class="form-input">
             <option value="">Todas las categor&iacute;as</option>
             <option value="__none">Sin categor&iacute;a</option>
@@ -47,20 +62,32 @@
             <option value="active" selected>Activos</option>
             <option value="inactive">Inactivos</option>
           </select>
-          <select id="sort-by" class="form-input">
-            <option value="recent">M&aacute;s recientes</option>
-            <option value="oldest">M&aacute;s antiguos</option>
-            <option value="name_asc">Nombre A&ndash;Z</option>
-            <option value="name_desc">Nombre Z&ndash;A</option>
-            <option value="price_asc">Precio menor a mayor</option>
-            <option value="price_desc">Precio mayor a menor</option>
-          </select>
+
           <button id="manage-categories-btn" class="btn btn--small btn--outline" type="button">Categor&iacute;as</button>
         </div>
-        <div class="list-toolbar__view" role="radiogroup" aria-label="Cambiar vista de productos">
+        <div class="list-toolbar__view list-toolbar__view--desktop" role="radiogroup" aria-label="Cambiar vista de productos">
           <button class="btn btn--small view-btn btn--primary" data-view="cards" type="button" aria-pressed="true">Tarjetas</button>
           <button class="btn btn--small view-btn btn--outline" data-view="compact" type="button" aria-pressed="false">Compacta</button>
           <button class="btn btn--small view-btn btn--outline" data-view="list" type="button" aria-pressed="false">Lista</button>
+        </div>
+      </div>
+      <div id="filters-panel" class="filters-panel hidden" role="region" aria-label="Filtros de productos" hidden>
+        <div class="filters-panel__body">
+          <select id="filter-category-mobile" class="form-input">
+            <option value="">Todas las categor&iacute;as</option>
+            <option value="__none">Sin categor&iacute;a</option>
+          </select>
+          <select id="filter-status-mobile" class="form-input">
+            <option value="all">Todos</option>
+            <option value="active" selected>Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+          <button id="manage-categories-btn-mobile" class="btn btn--small btn--outline" type="button">Categor&iacute;as</button>
+          <div class="filters-panel__view" role="radiogroup" aria-label="Cambiar vista de productos">
+            <button class="btn btn--small view-btn btn--primary" data-view="cards" type="button" aria-pressed="true">Tarjetas</button>
+            <button class="btn btn--small view-btn btn--outline" data-view="compact" type="button" aria-pressed="false">Compacta</button>
+            <button class="btn btn--small view-btn btn--outline" data-view="list" type="button" aria-pressed="false">Lista</button>
+          </div>
         </div>
       </div>
       <p id="result-count" class="list-toolbar__count" aria-live="polite"></p>

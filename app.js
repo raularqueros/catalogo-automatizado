@@ -38,9 +38,12 @@ class App {
   _loadViewMode() {
     try {
       const stored = localStorage.getItem('catalogo_product_view');
-      if (stored === 'cards' || stored === 'compact' || stored === 'list') return stored;
+      if (stored === 'cards' || stored === 'compact' || stored === 'list') {
+        if (window.innerWidth <= 767 && stored !== 'compact') return 'compact';
+        return stored;
+      }
     } catch (_) {}
-    return 'cards';
+    return window.innerWidth <= 767 ? 'compact' : 'cards';
   }
 
   _saveViewMode(mode) {
@@ -169,6 +172,22 @@ class App {
     document.getElementById('open-drive-btn').addEventListener('click', () => this._handleOpenFromDrive());
     document.getElementById('disconnect-drive-btn').addEventListener('click', () => this._handleDisconnectDrive());
 
+    // Debounced resize handler for mobile/desktop transitions
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const wasMobile = this._isMobile;
+        this._isMobile = window.innerWidth <= 767;
+        if (wasMobile !== this._isMobile) {
+          this._viewMode = this._loadViewMode();
+          this._updateViewButtons();
+          this._refreshProducts();
+        }
+      }, 200);
+    });
+    this._isMobile = window.innerWidth <= 767;
+
     this._form.onSave((payload) => this._handleSave(payload));
     this._form.onSaveSuccess(() => this._closeProductEditor());
 
@@ -197,6 +216,58 @@ class App {
     document.getElementById('sort-by').addEventListener('change', () => this._refreshProducts());
     document.getElementById('manage-categories-btn').addEventListener('click', () => this._handleManageCategories());
 
+    // Mobile filter events
+    document.getElementById('filter-category-mobile').addEventListener('change', () => {
+      const v = document.getElementById('filter-category-mobile').value;
+      const desk = document.getElementById('filter-category');
+      if (desk.value !== v) { desk.value = v; this._refreshProducts(); }
+      this._updateFiltersBadge();
+    });
+    document.getElementById('filter-status-mobile').addEventListener('change', () => {
+      const v = document.getElementById('filter-status-mobile').value;
+      const desk = document.getElementById('filter-status');
+      if (desk.value !== v) { desk.value = v; this._refreshProducts(); }
+      this._updateFiltersBadge();
+    });
+    document.getElementById('manage-categories-btn-mobile').addEventListener('click', () => this._handleManageCategories());
+
+    // Filters toggle
+    const filtersToggle = document.getElementById('filters-toggle');
+    const filtersPanel = document.getElementById('filters-panel');
+    filtersToggle.addEventListener('click', () => {
+      const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
+      filtersToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      filtersToggle.title = expanded ? 'Abrir panel de filtros' : 'Cerrar panel de filtros';
+      filtersPanel.classList.toggle('filters-panel--open');
+      filtersPanel.hidden = expanded;
+    });
+
+    // Close filters panel on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && filtersPanel.classList.contains('filters-panel--open')) {
+        filtersPanel.classList.remove('filters-panel--open');
+        filtersPanel.hidden = true;
+        filtersToggle.setAttribute('aria-expanded', 'false');
+        filtersToggle.title = 'Abrir panel de filtros';
+        filtersToggle.focus();
+      }
+    });
+
+    // Close filters panel on outside click
+    document.addEventListener('click', (e) => {
+      if (!filtersPanel.classList.contains('filters-panel--open')) return;
+      if (!filtersPanel.contains(e.target) && e.target !== filtersToggle && !filtersToggle.contains(e.target)) {
+        filtersPanel.classList.remove('filters-panel--open');
+        filtersPanel.hidden = true;
+        filtersToggle.setAttribute('aria-expanded', 'false');
+        filtersToggle.title = 'Abrir panel de filtros';
+      }
+    });
+
+    // Mobile new product button
+    document.getElementById('mobile-new-product-btn').addEventListener('click', () => this._openProductEditor('create'));
+
+    // View buttons (both desktop and panel)
     document.querySelectorAll('.view-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const mode = btn.dataset.view;
@@ -537,20 +608,48 @@ class App {
     return products.filter(p => p.categoryId === categoryId).length;
   }
 
-  _refreshFilterCategories() {
-    const sel = document.getElementById('filter-category');
-    const val = sel.value;
-    sel.innerHTML = '<option value="">Todas</option><option value="__none">Sin categor\u00eda</option>';
-    if (this._project && this._project.categories) {
-      for (const cat of this._project.categories) {
-        const opt = document.createElement('option'); opt.value = cat.id; opt.textContent = cat.name; sel.appendChild(opt);
-      }
+  _updateFiltersBadge() {
+    const badge = document.getElementById('filters-badge');
+    let count = 0;
+    const cat = document.getElementById('filter-category').value;
+    const status = document.getElementById('filter-status').value;
+    if (cat && cat !== '__none') count++;
+    if (status && status !== 'all') count++;
+    if (count > 0) {
+      badge.textContent = '\u00b7 ' + count;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
     }
-    sel.value = val;
+  }
+
+  _refreshFilterCategories() {
+    const sets = [
+      document.getElementById('filter-category'),
+      document.getElementById('filter-category-mobile')
+    ];
+    const val = document.getElementById('filter-category').value;
+    const html = '<option value="">Todas</option><option value="__none">Sin categor\u00eda</option>';
+    for (const sel of sets) {
+      if (!sel) continue;
+      sel.innerHTML = html;
+      if (this._project && this._project.categories) {
+        for (const cat of this._project.categories) {
+          const opt = document.createElement('option'); opt.value = cat.id; opt.textContent = cat.name; sel.appendChild(opt);
+        }
+      }
+      sel.value = val;
+    }
   }
 
   async _refreshProducts() {
     try {
+      // Sync mobile filter values from desktop
+      const catMobile = document.getElementById('filter-category-mobile');
+      const statusMobile = document.getElementById('filter-status-mobile');
+      if (catMobile) catMobile.value = document.getElementById('filter-category').value;
+      if (statusMobile) statusMobile.value = document.getElementById('filter-status').value;
+
       const all = await this._productService.listProducts(this._project.projectId);
       const search = document.getElementById('search-input').value;
       const categoryId = document.getElementById('filter-category').value;
@@ -559,6 +658,7 @@ class App {
       const filtered = this._productService.filterProducts(all, { search, categoryId, activeFilter, sortBy });
       document.getElementById('result-count').textContent = `${filtered.length} de ${all.length} productos`;
       await this._list.render(filtered, this._viewMode);
+      this._updateFiltersBadge();
     } catch (err) { console.error('Error al actualizar listado:', err); }
   }
 
