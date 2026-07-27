@@ -76,6 +76,7 @@ class App {
   // ─── Navegaci\u00f3n ───
 
   _setActiveSection(sectionName) {
+    if (!['products', 'catalog', 'project'].includes(sectionName)) return;
     this._activeSection = sectionName;
     document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
     const section = document.getElementById(`section-${sectionName}`);
@@ -110,7 +111,7 @@ class App {
   }
 
   _closeProductEditor() {
-    if (this._editorOpen && !this._form._isSaving) {
+    if (this._editorOpen && !this._form.isSaving()) {
       document.getElementById('product-editor-overlay').classList.add('hidden');
       document.getElementById('product-editor').classList.add('hidden');
       document.getElementById('product-editor-overlay').setAttribute('aria-hidden', 'true');
@@ -169,6 +170,7 @@ class App {
     document.getElementById('disconnect-drive-btn').addEventListener('click', () => this._handleDisconnectDrive());
 
     this._form.onSave((payload) => this._handleSave(payload));
+    this._form.onSaveSuccess(() => this._closeProductEditor());
 
     this._list.onEdit((id) => this._handleEdit(id));
     this._list.onDuplicate((id) => this._handleDuplicate(id));
@@ -264,8 +266,12 @@ class App {
     if (driveEl) {
       driveEl.textContent = this._drive.isConnected() ? 'Conectado' : 'Google Drive a\u00fan no conectado';
     }
-    if (lastSync && this._project && this._project.syncMetadata.lastCloudSync) {
-      lastSync.textContent = '\u00daltima sincronizaci\u00f3n: ' + new Date(this._project.syncMetadata.lastCloudSync).toLocaleString();
+    if (lastSync) {
+      if (this._project && this._project.syncMetadata.lastCloudSync) {
+        lastSync.textContent = '\u00daltima sincronizaci\u00f3n: ' + new Date(this._project.syncMetadata.lastCloudSync).toLocaleString();
+      } else {
+        lastSync.textContent = '';
+      }
     }
   }
 
@@ -286,7 +292,10 @@ class App {
     if (this._isDriveSyncing) return;
     this._isDriveSyncing = true;
     const saveBtn = document.getElementById('save-drive-btn');
-    saveBtn.disabled = true; saveBtn.textContent = 'Guardando en Drive\u2026';
+    const openBtn = document.getElementById('open-drive-btn');
+    const disconnectBtn = document.getElementById('disconnect-drive-btn');
+    saveBtn.disabled = true; openBtn.disabled = true; disconnectBtn.disabled = true;
+    saveBtn.textContent = 'Guardando en Drive\u2026';
     try {
       await this._sync.syncProjectToDrive(this._project, (msg) => this._status.showDriveProgress(msg));
       await this._updateProjectAndStatus();
@@ -302,6 +311,7 @@ class App {
     } finally {
       this._isDriveSyncing = false;
       saveBtn.disabled = false; saveBtn.textContent = 'Guardar en Drive';
+      openBtn.disabled = false; disconnectBtn.disabled = false;
     }
   }
 
@@ -315,6 +325,7 @@ class App {
     const confirmBtn = document.getElementById('drive-open-confirm-btn');
     const cancelBtn = document.getElementById('drive-open-cancel-btn');
     let selectedProject = null;
+    let remoteProjects = [];
 
     function showLoading() { loadingEl.classList.remove('hidden'); listEl.classList.add('hidden'); emptyEl.classList.add('hidden'); errorEl.classList.add('hidden'); confirmBtn.classList.add('hidden'); }
     function showEmpty() { loadingEl.classList.add('hidden'); listEl.classList.add('hidden'); emptyEl.classList.remove('hidden'); errorEl.classList.add('hidden'); confirmBtn.classList.add('hidden'); }
@@ -334,16 +345,19 @@ class App {
     function closeDialog() { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); }
     const onCancel = () => closeDialog();
     const onConfirm = async () => { if (!selectedProject) return; closeDialog(); await this._handleImportFromDrive(selectedProject); };
-    cancelBtn.addEventListener('click', onCancel); confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    confirmBtn.addEventListener('click', onConfirm);
+
     dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false');
     showLoading(); cancelBtn.focus();
     try {
-      const projects = await this._drive.listRemoteProjects();
-      projects.length === 0 ? showEmpty() : showList(projects);
+      remoteProjects = await this._drive.listRemoteProjects();
+      remoteProjects.length === 0 ? showEmpty() : showList(remoteProjects);
     } catch (err) {
-      console.error(err);
-      if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); showError('La sesi\u00f3n de Drive expir\u00f3.'); }
-      else { showError(`Error: ${err.message}`); }
+      console.error('Error al listar proyectos:', err);
+      if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); showError('La sesi\u00f3n de Google Drive expir\u00f3.'); }
+      else { showError(`Error al buscar proyectos: ${err.message}`); }
+      confirmBtn.classList.add('hidden');
     }
   }
 
@@ -353,17 +367,31 @@ class App {
     try {
       const result = await this._sync.openProjectFromDrive(remoteProject,
         (msg) => this._status.showDriveProgress(msg),
-        async (conflict) => new Promise((resolve) => { resolve(confirm('\u00bfReemplazar la copia local con la versi\u00f3n de Drive?') ? 'replace' : 'cancel'); })
+        async (conflict) => new Promise((resolve) => {
+          let question;
+          if (conflict.reason && conflict.reason.includes('pendientes')) {
+            question = `Hay cambios locales pendientes en "${conflict.localProject?.name || 'este proyecto'}" que no est\u00e1n en Drive.\n\n\u00bfDeseas reemplazar la copia local con la versi\u00f3n de Drive? Los cambios locales se perder\u00e1n.`;
+          } else if (conflict.reason && conflict.reason.includes('m\u00e1s reciente')) {
+            question = `\u00bfDeseas abrir la versi\u00f3n de Drive de "${conflict.localProject?.name || 'este proyecto'}"? Tu copia local ser\u00e1 reemplazada.`;
+          } else {
+            question = `\u00bfReemplazar la copia local con la versi\u00f3n de Drive de "${conflict.localProject?.name || 'este proyecto'}"?`;
+          }
+          resolve(confirm(question) ? 'replace' : 'cancel');
+        })
       );
       this._project = await this._storage.getProject(remoteProject.projectId);
       document.getElementById('project-name').textContent = this._project.name;
       await this._refreshProducts();
       await this._updateProjectAndStatus();
-      this._notifications.success(`Proyecto "${result.project.name}" abierto desde Drive.`);
+      this._notifications.success(`Proyecto "${result.project.name}" abierto desde Google Drive (${result.totalProducts} productos, ${result.totalImages} im\u00e1genes).`);
     } catch (err) {
-      if (err.conflict === 'skip') this._notifications.info(err.message);
-      else if (err.conflict === 'cancelled') this._notifications.info('Apertura cancelada.');
-      else { console.error(err); this._notifications.error(`Error: ${err.message}`); }
+      if (err.conflict === 'skip') { this._notifications.info(err.message); }
+      else if (err.conflict === 'cancelled' || err.conflict === 'pending') { this._notifications.info(err.message || 'Apertura cancelada.'); }
+      else {
+        console.error('Error al abrir desde Drive:', err);
+        if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); this._notifications.error('La sesi\u00f3n de Google Drive expir\u00f3.'); }
+        else { this._notifications.error(`Error al abrir: ${err.message}`); }
+      }
       try { await this._updateProjectAndStatus(); } catch (_) {}
     } finally { this._isDriveSyncing = false; }
   }
@@ -414,21 +442,21 @@ class App {
 
   async _handleSave({ data, editingProductId, expectedRevision, imageAction, imageFile }) {
     this._status.showSaving();
+    if (data.categoryId) {
+      const cat = this._project.categories.find(c => c.id === data.categoryId);
+      if (cat) data.category = cat.name;
+    } else { data.category = ''; }
+
+    let imageRecord = null;
+    if (imageAction === 'replace') {
+      if (!imageFile) throw new Error('IMAGE_FILE_MISSING');
+      const validation = validateImage(imageFile);
+      if (!validation.valid) { this._notifications.error(validation.error); throw new Error(validation.error); }
+      const optimized = await optimizeImage(imageFile);
+      imageRecord = createImageRecord(this._project.projectId, optimized.blob, optimized.mimeType, optimized.width, optimized.height, optimized.optimizedSize);
+    }
+
     try {
-      if (data.categoryId) {
-        const cat = this._project.categories.find(c => c.id === data.categoryId);
-        if (cat) data.category = cat.name;
-      } else { data.category = ''; }
-
-      let imageRecord = null;
-      if (imageAction === 'replace') {
-        if (!imageFile) throw new Error('IMAGE_FILE_MISSING');
-        const validation = validateImage(imageFile);
-        if (!validation.valid) { this._notifications.error(validation.error); this._status.update(this._project); return; }
-        const optimized = await optimizeImage(imageFile);
-        imageRecord = createImageRecord(this._project.projectId, optimized.blob, optimized.mimeType, optimized.width, optimized.height, optimized.optimizedSize);
-      }
-
       if (editingProductId && expectedRevision !== null) {
         await this._productService.updateProduct(editingProductId, expectedRevision, this._project.projectId, data, imageAction, imageRecord);
         this._notifications.success('Producto actualizado.');
@@ -436,15 +464,12 @@ class App {
         await this._productService.createProduct(this._project.projectId, data, imageRecord);
         this._notifications.success('Producto creado.');
       }
-
-      this._closeProductEditor();
       try { await this._refreshProducts(); await this._updateProjectAndStatus(); } catch (e) { console.warn(e); }
     } catch (err) {
-      console.error('Error al guardar:', err);
       if (err.name === 'ConflictError') this._notifications.error('Este producto cambi\u00f3...');
       else if (err.code === 'PRODUCT_NOT_FOUND') this._notifications.error('Este producto ya no existe.');
       else this._notifications.error(`Error: ${err.message}`);
-      try { await this._updateProjectAndStatus(); } catch (_) {}
+      throw err;
     }
   }
 
@@ -544,9 +569,15 @@ class App {
     const cancelBtn = document.getElementById('catalog-config-cancel-btn');
     titleInput.value = this._project ? this._project.name : '';
     dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); titleInput.focus();
-    const close = () => { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); };
-    cancelBtn.addEventListener('click', close);
-    previewBtn.addEventListener('click', async () => {
+
+    const close = () => {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+      previewBtn.removeEventListener('click', onPreview);
+      cancelBtn.removeEventListener('click', onClose);
+    };
+    const onClose = () => close();
+    const onPreview = async () => {
       const opts = {
         showPrices: document.getElementById('catalog-show-prices').checked,
         showDescriptions: document.getElementById('catalog-show-descriptions').checked,
@@ -556,7 +587,9 @@ class App {
       };
       close();
       await this._handleCatalogPreview(opts);
-    }, { once: true });
+    };
+    cancelBtn.addEventListener('click', onClose);
+    previewBtn.addEventListener('click', onPreview);
   }
 
   async _handleCatalogPreview(options) {
@@ -568,20 +601,46 @@ class App {
       for (const p of activeProducts) { if (p.imageId && !imageMap.has(p.imageId)) { const record = await this._productService.getImage(p.imageId); if (record) imageMap.set(p.imageId, record); } }
       const previewDialog = document.getElementById('catalog-preview-dialog');
       const content = document.getElementById('catalog-preview-content');
+      const exportBtn = document.getElementById('catalog-export-btn');
+      const backBtn = document.getElementById('catalog-preview-back-btn');
       const catalogEl = this._catalogBuilder.build(this._project, activeProducts, imageMap, options);
       content.innerHTML = ''; content.appendChild(catalogEl);
       previewDialog.classList.remove('hidden'); previewDialog.setAttribute('aria-hidden', 'false');
       await this._printManager.loadImages(imageMap, catalogEl);
-      const closePreview = () => { previewDialog.classList.add('hidden'); previewDialog.setAttribute('aria-hidden', 'true'); content.innerHTML = ''; this._printManager.destroy(); };
-      document.getElementById('catalog-preview-back-btn').addEventListener('click', closePreview, { once: true });
-      document.getElementById('catalog-export-btn').addEventListener('click', async () => {
-        const btn = document.getElementById('catalog-export-btn');
-        btn.disabled = true; btn.textContent = 'Preparando PDF\u2026';
-        try { await this._printManager.loadImages(imageMap, catalogEl); await this._printManager.print(catalogEl); }
-        catch (err) { console.error(err); }
-        finally { btn.disabled = false; btn.textContent = 'Exportar PDF'; }
-      }, { once: true });
-    } catch (err) { console.error(err); this._notifications.error('Error al generar vista previa.'); }
+
+      const closePreview = () => {
+        previewDialog.classList.add('hidden');
+        previewDialog.setAttribute('aria-hidden', 'true');
+        content.innerHTML = '';
+        this._printManager.destroy();
+        exportBtn.removeEventListener('click', onExport);
+        backBtn.removeEventListener('click', onBack);
+      };
+      const onBack = () => closePreview();
+
+      const onExport = async () => {
+        exportBtn.disabled = true;
+        exportBtn.textContent = 'Preparando PDF\u2026';
+        exportBtn.setAttribute('aria-busy', 'true');
+        try {
+          this._printManager._revokeAll();
+          await this._printManager.loadImages(imageMap, catalogEl);
+          await this._printManager.print(catalogEl);
+        } catch (err) {
+          console.error('Error al exportar:', err);
+        } finally {
+          exportBtn.disabled = false;
+          exportBtn.textContent = 'Exportar PDF';
+          exportBtn.removeAttribute('aria-busy');
+        }
+      };
+
+      exportBtn.addEventListener('click', onExport);
+      backBtn.addEventListener('click', onBack);
+    } catch (err) {
+      console.error('Error al generar vista previa:', err);
+      this._notifications.error('Error al generar la vista previa.');
+    }
   }
 
   async _updateProjectAndStatus() {

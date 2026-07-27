@@ -24,6 +24,8 @@ export class ProductForm {
 
   onSave(callback) { this._onSaved = callback; }
   onCancel(callback) { this._onCancelled = callback; }
+  onSaveSuccess(callback) { this._onSaveSuccess = callback; }
+  isSaving() { return !!this._isSaving; }
 
   _init() {
     this._elements.form = document.getElementById('product-form');
@@ -192,6 +194,8 @@ export class ProductForm {
     this._isSaving = true;
     this._setSavingState(true);
 
+    let success = false;
+
     try {
       if (typeof this._onSaved === 'function') {
         await this._onSaved({
@@ -201,6 +205,7 @@ export class ProductForm {
           imageAction: this._imageAction,
           imageFile: this._selectedImageFile
         });
+        success = true;
       }
     } catch (err) {
       console.error('Error al guardar (gestionado por app.js):', err);
@@ -208,6 +213,11 @@ export class ProductForm {
       this._isSaving = false;
       this._setSavingState(false);
     }
+
+    if (success && typeof this._onSaveSuccess === 'function') {
+      this._onSaveSuccess();
+    }
+  }
   }
 
   _setSavingState(saving) {
