@@ -12,82 +12,29 @@
   <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
 
   <header class="header">
-    <div class="header__top">
-      <div class="header__brand">
-        <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
-        <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
-      </div>
-      <div class="header__actions">
-        <button class="btn btn--primary" id="new-product-btn" type="button">Nuevo producto</button>
-        <button class="btn btn--secondary" id="create-catalog-btn" type="button">Crear cat&aacute;logo</button>
-        <button class="btn btn--outline hidden" id="save-drive-btn" type="button">Guardar en Drive</button>
-        <button class="btn btn--outline hidden" id="open-drive-btn" type="button">Abrir desde Drive</button>
-        <button class="btn btn--outline hidden" id="disconnect-drive-btn" type="button">Desconectar Drive</button>
-        <button class="btn btn--outline" id="connect-drive-btn" type="button">Conectar Google Drive</button>
-      </div>
+    <div class="header__brand">
+      <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
+      <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
     </div>
+    <nav class="header-nav" aria-label="Navegaci&oacute;n principal">
+      <button class="header-nav__btn header-nav__btn--active" data-section="products" aria-pressed="true">Productos</button>
+      <button class="header-nav__btn" data-section="catalog" aria-pressed="false">Cat&aacute;logo</button>
+      <button class="header-nav__btn" data-section="project" aria-pressed="false">Proyecto</button>
+    </nav>
     <div id="storage-status" class="storage-status" role="status" aria-live="polite">Inicializando&hellip;</div>
   </header>
 
-  <main id="main-content" class="main-layout">
-    <section class="form-section" aria-label="Formulario de producto">
-      <h2 class="form-section__title" id="form-title">Nuevo producto</h2>
-      <form id="product-form" class="product-form" novalidate>
-        <div class="form-group image-upload-group">
-          <label class="form-label">Fotograf&iacute;a</label>
-          <div id="image-preview-container" class="image-preview image-preview--empty">
-            <img id="image-preview" class="image-preview__img" src="" alt="Sin fotograf&iacute;a" />
-            <div class="image-preview__placeholder">
-              <span class="image-preview__icon" aria-hidden="true">&#128247;</span>
-              <span>Haga clic para agregar imagen</span>
-            </div>
-            <div class="image-preview__actions">
-              <button id="change-image-btn" class="btn btn--small btn--outline hidden" type="button">Cambiar imagen</button>
-              <button id="remove-image-btn" class="btn btn--small btn--danger hidden" type="button">Quitar imagen</button>
-            </div>
-          </div>
-          <input type="file" id="product-image" accept="image/jpeg,image/png,image/webp" class="hidden-input">
-          <div id="image-error" class="field-error" role="alert" aria-live="polite"></div>
+  <main id="main-content" class="main-content">
+    <!-- Sección: Productos -->
+    <section id="section-products" class="app-section" aria-label="Productos">
+      <div class="section-header">
+        <div>
+          <h2 class="section-header__title">Productos</h2>
+          <p class="section-header__subtitle">Administra los productos que formar&aacute;n parte de tus cat&aacute;logos</p>
         </div>
+        <button class="btn btn--primary" id="new-product-btn" type="button">Nuevo producto</button>
+      </div>
 
-        <div class="form-group">
-          <label for="product-name" class="form-label">Nombre <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="product-name" class="form-input" required aria-describedby="name-error" placeholder="Nombre del producto">
-          <div id="name-error" class="field-error" role="alert" aria-live="polite"></div>
-        </div>
-
-        <div class="form-group">
-          <label for="product-price" class="form-label">Precio <span class="required" aria-hidden="true">*</span></label>
-          <input type="number" id="product-price" class="form-input" required min="0" step="any" aria-describedby="price-error" placeholder="0">
-          <div id="price-error" class="field-error" role="alert" aria-live="polite"></div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="product-sku" class="form-label">C&oacute;digo / SKU</label>
-            <input type="text" id="product-sku" class="form-input" placeholder="Ej: PROD-001">
-          </div>
-          <div class="form-group">
-            <label for="product-category-select" class="form-label">Categor&iacute;a</label>
-            <select id="product-category-select" class="form-input">
-              <option value="">Sin categor&iacute;a</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="product-description" class="form-label">Descripci&oacute;n</label>
-          <textarea id="product-description" class="form-input form-textarea" rows="3" placeholder="Descripci&oacute;n del producto"></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" id="submit-product-btn" class="btn btn--primary btn--lg">Guardar producto</button>
-          <button type="button" id="cancel-btn" class="btn btn--outline btn--lg hidden">Cancelar</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="list-section" aria-label="Listado de productos">
       <div class="list-toolbar">
         <input type="search" id="search-input" class="form-input list-toolbar__search" placeholder="Buscar productos&hellip;">
         <div class="list-toolbar__filters">
@@ -115,9 +62,9 @@
           <button class="btn btn--small view-btn btn--outline" data-view="compact" type="button" aria-pressed="false">Compacta</button>
           <button class="btn btn--small view-btn btn--outline" data-view="list" type="button" aria-pressed="false">Lista</button>
         </div>
-        </div>
-        <p id="result-count" class="list-toolbar__count" aria-live="polite"></p>
       </div>
+      <p id="result-count" class="list-toolbar__count" aria-live="polite"></p>
+
       <div id="empty-state" class="empty-state">
         <p class="empty-state__icon" aria-hidden="true">&#128230;</p>
         <p class="empty-state__title">A&uacute;n no hay productos</p>
@@ -126,15 +73,113 @@
       </div>
       <div id="product-list" class="product-list"></div>
     </section>
+
+    <!-- Sección: Catálogo -->
+    <section id="section-catalog" class="app-section hidden" aria-label="Cat&aacute;logo">
+      <div class="section-header">
+        <div>
+          <h2 class="section-header__title">Cat&aacute;logo</h2>
+          <p class="section-header__subtitle">Configura y genera un cat&aacute;logo usando tus productos activos</p>
+        </div>
+        <button class="btn btn--primary" id="catalog-config-btn" type="button">Configurar cat&aacute;logo</button>
+      </div>
+      <div class="info-card">
+        <p id="catalog-summary-products">Productos totales: 0</p>
+        <p id="catalog-summary-active">Productos activos: 0</p>
+        <p id="catalog-summary-categories">Categor&iacute;as: 0</p>
+        <p class="info-card__note">La exportaci&oacute;n PDF contin&uacute;a como funci&oacute;n experimental.</p>
+      </div>
+    </section>
+
+    <!-- Sección: Proyecto -->
+    <section id="section-project" class="app-section hidden" aria-label="Proyecto">
+      <div class="section-header">
+        <div>
+          <h2 class="section-header__title">Proyecto</h2>
+          <p class="section-header__subtitle" id="project-subtitle">Tus datos se guardan primero en este navegador. Google Drive funciona como respaldo remoto adicional.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <p><strong>Nombre del proyecto:</strong> <span id="project-section-name"></span></p>
+        <p><strong>Estado local:</strong> <span id="project-local-status"></span></p>
+        <p><strong>Google Drive:</strong> <span id="project-drive-status"></span></p>
+        <p id="project-last-sync" class="info-card__note"></p>
+      </div>
+      <div class="project-actions">
+        <button class="btn btn--primary hidden" id="save-drive-btn" type="button">Guardar en Drive</button>
+        <button class="btn btn--outline hidden" id="open-drive-btn" type="button">Abrir desde Drive</button>
+        <button class="btn btn--outline" id="connect-drive-btn" type="button">Conectar Google Drive</button>
+        <button class="btn btn--outline hidden" id="disconnect-drive-btn" type="button">Desconectar Drive</button>
+      </div>
+    </section>
   </main>
 
+  <!-- Panel: Editor de producto -->
+  <div id="product-editor-overlay" class="editor-overlay hidden" aria-hidden="true"></div>
+  <aside id="product-editor" class="editor-panel hidden" role="dialog" aria-modal="true" aria-labelledby="form-title">
+    <div class="editor-panel__header">
+      <h2 class="editor-panel__title" id="form-title">Nuevo producto</h2>
+      <button id="editor-close-btn" class="btn btn--small btn--outline" type="button" aria-label="Cerrar editor">&#10005;</button>
+    </div>
+    <div class="editor-panel__body">
+      <form id="product-form" class="product-form" novalidate>
+        <div class="form-group image-upload-group">
+          <label class="form-label">Fotograf&iacute;a</label>
+          <div id="image-preview-container" class="image-preview image-preview--empty">
+            <img id="image-preview" class="image-preview__img" src="" alt="Sin fotograf&iacute;a" />
+            <div class="image-preview__placeholder">
+              <span class="image-preview__icon" aria-hidden="true">&#128247;</span>
+              <span>Haga clic para agregar imagen</span>
+            </div>
+            <div class="image-preview__actions">
+              <button id="change-image-btn" class="btn btn--small btn--outline hidden" type="button">Cambiar imagen</button>
+              <button id="remove-image-btn" class="btn btn--small btn--danger hidden" type="button">Quitar imagen</button>
+            </div>
+          </div>
+          <input type="file" id="product-image" accept="image/jpeg,image/png,image/webp" class="hidden-input">
+          <div id="image-error" class="field-error" role="alert" aria-live="polite"></div>
+        </div>
+        <div class="form-group">
+          <label for="product-name" class="form-label">Nombre <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="product-name" class="form-input" required aria-describedby="name-error" placeholder="Nombre del producto">
+          <div id="name-error" class="field-error" role="alert" aria-live="polite"></div>
+        </div>
+        <div class="form-group">
+          <label for="product-price" class="form-label">Precio <span class="required" aria-hidden="true">*</span></label>
+          <input type="number" id="product-price" class="form-input" required min="0" step="any" aria-describedby="price-error" placeholder="0">
+          <div id="price-error" class="field-error" role="alert" aria-live="polite"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="product-sku" class="form-label">C&oacute;digo / SKU</label>
+            <input type="text" id="product-sku" class="form-input" placeholder="Ej: PROD-001">
+          </div>
+          <div class="form-group">
+            <label for="product-category-select" class="form-label">Categor&iacute;a</label>
+            <select id="product-category-select" class="form-input">
+              <option value="">Sin categor&iacute;a</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="product-description" class="form-label">Descripci&oacute;n</label>
+          <textarea id="product-description" class="form-input form-textarea" rows="3" placeholder="Descripci&oacute;n del producto"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="submit-product-btn" class="btn btn--primary btn--lg">Guardar producto</button>
+          <button type="button" id="cancel-btn" class="btn btn--outline btn--lg hidden">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
   <!-- Diálogo: Administrar categorías -->
-  <div id="categories-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Administrar categorías">
+  <div id="categories-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Administrar categor&iacute;as">
     <div class="dialog dialog--wide">
-      <h2 class="dialog__title">Administrar categorías</h2>
+      <h2 class="dialog__title">Administrar categor&iacute;as</h2>
       <div class="dialog__body">
         <div class="categories-form-row">
-          <input type="text" id="new-category-input" class="form-input" placeholder="Nueva categoría">
+          <input type="text" id="new-category-input" class="form-input" placeholder="Nueva categor&iacute;a">
           <button id="add-category-btn" class="btn btn--primary btn--small" type="button">Agregar</button>
         </div>
         <ul id="categories-list" class="categories-list"></ul>
@@ -145,37 +190,16 @@
     </div>
   </div>
 
-  <!-- Diálogo: Configuración del catálogo -->
-  <div id="catalog-config-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Configurar catálogo">
+  <!-- Diálogos del catálogo (config y preview) sin cambios -->
+  <div id="catalog-config-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Configurar cat&aacute;logo">
     <div class="dialog">
-      <h2 class="dialog__title">Configurar catálogo</h2>
+      <h2 class="dialog__title">Configurar cat&aacute;logo</h2>
       <div class="dialog__body">
-        <div class="form-group">
-          <label for="catalog-title" class="form-label">Nombre del catálogo</label>
-          <input type="text" id="catalog-title" class="form-input">
-        </div>
-        <div class="form-group">
-          <label for="catalog-company" class="form-label">Nombre de la empresa</label>
-          <input type="text" id="catalog-company" class="form-input" placeholder="Ej: Mi Empresa Ltda.">
-        </div>
-        <div class="form-group">
-          <label class="form-checkbox-label">
-            <input type="checkbox" id="catalog-show-prices" checked>
-            Mostrar precios
-          </label>
-        </div>
-        <div class="form-group">
-          <label class="form-checkbox-label">
-            <input type="checkbox" id="catalog-show-descriptions" checked>
-            Mostrar descripciones
-          </label>
-        </div>
-        <div class="form-group">
-          <label class="form-checkbox-label">
-            <input type="checkbox" id="catalog-show-codes">
-            Mostrar códigos
-          </label>
-        </div>
+        <div class="form-group"><label for="catalog-title" class="form-label">Nombre del cat&aacute;logo</label><input type="text" id="catalog-title" class="form-input"></div>
+        <div class="form-group"><label for="catalog-company" class="form-label">Nombre de la empresa</label><input type="text" id="catalog-company" class="form-input" placeholder="Ej: Mi Empresa Ltda."></div>
+        <div class="form-group"><label class="form-checkbox-label"><input type="checkbox" id="catalog-show-prices" checked> Mostrar precios</label></div>
+        <div class="form-group"><label class="form-checkbox-label"><input type="checkbox" id="catalog-show-descriptions" checked> Mostrar descripciones</label></div>
+        <div class="form-group"><label class="form-checkbox-label"><input type="checkbox" id="catalog-show-codes"> Mostrar c&oacute;digos</label></div>
       </div>
       <div class="dialog__actions">
         <button id="catalog-preview-btn" class="btn btn--primary" type="button">Vista previa</button>
@@ -184,8 +208,7 @@
     </div>
   </div>
 
-  <!-- Diálogo: Vista previa del catálogo -->
-  <div id="catalog-preview-dialog" class="dialog-overlay hidden catalog-preview-overlay" role="dialog" aria-modal="true" aria-label="Vista previa del catálogo">
+  <div id="catalog-preview-dialog" class="dialog-overlay hidden catalog-preview-overlay" role="dialog" aria-modal="true" aria-label="Vista previa del cat&aacute;logo">
     <div class="catalog-preview-container">
       <div id="catalog-preview-content"></div>
       <div class="catalog-preview-actions">
@@ -196,13 +219,12 @@
     </div>
   </div>
 
-  <!-- Diálogo: Abrir desde Drive -->
   <div id="drive-open-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Abrir proyecto desde Google Drive">
     <div class="dialog dialog--wide">
       <h2 class="dialog__title">Abrir desde Google Drive</h2>
       <div class="dialog__body">
         <div id="drive-projects-loading" class="drive-projects-loading">Buscando proyectos en Google Drive&hellip;</div>
-        <div id="drive-projects-empty" class="drive-projects-empty hidden">No se encontraron proyectos en Google Drive. Guarda un proyecto primero.</div>
+        <div id="drive-projects-empty" class="drive-projects-empty hidden">No se encontraron proyectos en Google Drive.</div>
         <div id="drive-projects-error" class="drive-projects-error hidden" role="alert"></div>
         <ul id="drive-projects-list" class="drive-projects-list hidden" role="listbox" aria-label="Proyectos disponibles en Google Drive"></ul>
       </div>
@@ -214,7 +236,6 @@
   </div>
 
   <div id="catalog-print-root" aria-hidden="true"></div>
-
   <script type="module" src="app.js"></script>
 </body>
 </html>

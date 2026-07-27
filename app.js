@@ -30,6 +30,9 @@ class App {
     this._catalogBuilder = new CatalogBuilder();
     this._printManager = new PrintManager();
     this._viewMode = this._loadViewMode();
+    this._activeSection = 'products';
+    this._editorOpen = false;
+    this._lastFocusedElement = null;
   }
 
   _loadViewMode() {
@@ -60,12 +63,64 @@ class App {
       await this._storage.initialize();
       await this._loadOrCreateProject();
       this._setupUI();
+      this._setActiveSection('products');
       await this._refreshProducts();
       this._updateUIForDriveState();
       this._status.update(this._project);
     } catch (err) {
       console.error('Error al iniciar la aplicaci\u00f3n:', err);
       this._notifications.error('Error al iniciar la aplicaci\u00f3n. Revise la consola para m\u00e1s detalles.');
+    }
+  }
+
+  // ─── Navegaci\u00f3n ───
+
+  _setActiveSection(sectionName) {
+    this._activeSection = sectionName;
+    document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+    const section = document.getElementById(`section-${sectionName}`);
+    if (section) section.classList.remove('hidden');
+
+    document.querySelectorAll('.header-nav__btn').forEach(btn => {
+      const isActive = btn.dataset.section === sectionName;
+      btn.classList.toggle('header-nav__btn--active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+
+    if (sectionName === 'catalog') this._updateCatalogSummary();
+    if (sectionName === 'project') this._updateProjectSection();
+  }
+
+  _openProductEditor(mode, product = null) {
+    if (this._isDriveSyncing) return;
+    this._lastFocusedElement = document.activeElement;
+    if (mode === 'edit' && product) {
+      this._form.loadForEdit(product);
+    } else {
+      this._form.reset();
+    }
+    const overlay = document.getElementById('product-editor-overlay');
+    const panel = document.getElementById('product-editor');
+    overlay.classList.remove('hidden');
+    panel.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    panel.setAttribute('aria-hidden', 'false');
+    this._editorOpen = true;
+    document.getElementById('product-name').focus();
+  }
+
+  _closeProductEditor() {
+    if (this._editorOpen && !this._form._isSaving) {
+      document.getElementById('product-editor-overlay').classList.add('hidden');
+      document.getElementById('product-editor').classList.add('hidden');
+      document.getElementById('product-editor-overlay').setAttribute('aria-hidden', 'true');
+      document.getElementById('product-editor').setAttribute('aria-hidden', 'true');
+      this._editorOpen = false;
+      this._form.reset();
+      if (this._lastFocusedElement) {
+        this._lastFocusedElement.focus();
+        this._lastFocusedElement = null;
+      }
     }
   }
 
@@ -85,27 +140,35 @@ class App {
   }
 
   _setupUI() {
+    // Nav tabs
+    document.querySelectorAll('.header-nav__btn').forEach(btn => {
+      btn.addEventListener('click', () => this._setActiveSection(btn.dataset.section));
+    });
+
+    // Product editor buttons
     const newProductBtn = document.getElementById('new-product-btn');
     const emptyAddBtn = document.getElementById('empty-add-btn');
-    const createCatalogBtn = document.getElementById('create-catalog-btn');
-    const connectDriveBtn = document.getElementById('connect-drive-btn');
-    const saveDriveBtn = document.getElementById('save-drive-btn');
-    const openDriveBtn = document.getElementById('open-drive-btn');
-    const disconnectDriveBtn = document.getElementById('disconnect-drive-btn');
-
-    newProductBtn.addEventListener('click', () => {
-      this._form.reset();
-      document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+    newProductBtn.addEventListener('click', () => this._openProductEditor('create'));
+    if (emptyAddBtn) emptyAddBtn.addEventListener('click', () => this._openProductEditor('create'));
+    document.getElementById('editor-close-btn').addEventListener('click', () => this._closeProductEditor());
+    document.getElementById('cancel-btn').addEventListener('click', () => this._closeProductEditor());
+    document.getElementById('product-editor-overlay').addEventListener('click', () => this._closeProductEditor());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this._editorOpen && !document.querySelector('.dialog-overlay:not(.hidden)')) {
+        this._closeProductEditor();
+      }
     });
-    if (emptyAddBtn) emptyAddBtn.addEventListener('click', () => { this._form.reset(); document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' }); });
-    if (createCatalogBtn) createCatalogBtn.addEventListener('click', () => this._handleCatalogConfig());
-    if (connectDriveBtn) connectDriveBtn.addEventListener('click', () => this._handleConnectDrive());
-    if (saveDriveBtn) saveDriveBtn.addEventListener('click', () => this._handleSaveToDrive());
-    if (openDriveBtn) openDriveBtn.addEventListener('click', () => this._handleOpenFromDrive());
-    if (disconnectDriveBtn) disconnectDriveBtn.addEventListener('click', () => this._handleDisconnectDrive());
+
+    // Catalog config button
+    document.getElementById('catalog-config-btn').addEventListener('click', () => this._handleCatalogConfig());
+
+    // Drive buttons
+    document.getElementById('connect-drive-btn').addEventListener('click', () => this._handleConnectDrive());
+    document.getElementById('save-drive-btn').addEventListener('click', () => this._handleSaveToDrive());
+    document.getElementById('open-drive-btn').addEventListener('click', () => this._handleOpenFromDrive());
+    document.getElementById('disconnect-drive-btn').addEventListener('click', () => this._handleDisconnectDrive());
 
     this._form.onSave((payload) => this._handleSave(payload));
-    this._form.onCancel(() => { if (this._lastFocusedProductCard) { this._lastFocusedProductCard.focus(); this._lastFocusedProductCard = null; } });
 
     this._list.onEdit((id) => this._handleEdit(id));
     this._list.onDuplicate((id) => this._handleDuplicate(id));
@@ -125,6 +188,7 @@ class App {
       }
     });
 
+    // Toolbar events
     document.getElementById('search-input').addEventListener('input', () => this._refreshProducts());
     document.getElementById('filter-category').addEventListener('change', () => this._refreshProducts());
     document.getElementById('filter-status').addEventListener('change', () => this._refreshProducts());
@@ -152,6 +216,7 @@ class App {
           this._drive.setAccessToken(result.token);
           this._updateUIForDriveState();
           this._status.update(this._project);
+          this._updateProjectSection();
           this._notifications.success('Google Drive conectado correctamente.');
         } else if (result.error !== 'access_denied') {
           this._notifications.error(result.message);
@@ -168,6 +233,7 @@ class App {
     this._drive.clearAccessToken();
     this._updateUIForDriveState();
     this._status.update(this._project);
+    this._updateProjectSection();
     this._notifications.info('Google Drive desconectado.');
   }
 
@@ -183,21 +249,51 @@ class App {
     if (disconnectBtn) disconnectBtn.classList.toggle('hidden', !connected);
   }
 
+  _updateProjectSection() {
+    const pname = document.getElementById('project-section-name');
+    const localEl = document.getElementById('project-local-status');
+    const driveEl = document.getElementById('project-drive-status');
+    const lastSync = document.getElementById('project-last-sync');
+    if (pname) pname.textContent = this._project ? this._project.name : '';
+    if (localEl && this._project) {
+      const s = this._project.syncMetadata.status;
+      if (s === 'synced') localEl.textContent = 'Sincronizado';
+      else if (s === 'pending') localEl.textContent = 'Guardado localmente \u00b7 Cambios pendientes';
+      else localEl.textContent = 'Guardado localmente';
+    }
+    if (driveEl) {
+      driveEl.textContent = this._drive.isConnected() ? 'Conectado' : 'Google Drive a\u00fan no conectado';
+    }
+    if (lastSync && this._project && this._project.syncMetadata.lastCloudSync) {
+      lastSync.textContent = '\u00daltima sincronizaci\u00f3n: ' + new Date(this._project.syncMetadata.lastCloudSync).toLocaleString();
+    }
+  }
+
+  _updateCatalogSummary() {
+    (async () => {
+      try {
+        const all = await this._productService.listProducts(this._project.projectId);
+        const active = all.filter(p => p.active !== false).length;
+        const cats = this._project.categories ? this._project.categories.length : 0;
+        document.getElementById('catalog-summary-products').textContent = 'Productos totales: ' + all.length;
+        document.getElementById('catalog-summary-active').textContent = 'Productos activos: ' + active;
+        document.getElementById('catalog-summary-categories').textContent = 'Categor\u00edas: ' + cats;
+      } catch (_) {}
+    })();
+  }
+
   async _handleSaveToDrive() {
     if (this._isDriveSyncing) return;
     this._isDriveSyncing = true;
     const saveBtn = document.getElementById('save-drive-btn');
-    const connectBtn = document.getElementById('connect-drive-btn');
-    const disconnectBtn = document.getElementById('disconnect-drive-btn');
-    saveBtn.disabled = true; connectBtn.disabled = true; disconnectBtn.disabled = true;
-    saveBtn.textContent = 'Guardando en Drive\u2026';
+    saveBtn.disabled = true; saveBtn.textContent = 'Guardando en Drive\u2026';
     try {
       await this._sync.syncProjectToDrive(this._project, (msg) => this._status.showDriveProgress(msg));
       await this._updateProjectAndStatus();
       this._notifications.success('Proyecto guardado en Google Drive.');
     } catch (err) {
       console.error('Error al guardar en Drive:', err);
-      if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); this._notifications.error('La sesi\u00f3n de Google Drive expir\u00f3. Vuelve a conectar.'); }
+      if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); this._updateProjectSection(); this._notifications.error('La sesi\u00f3n de Google Drive expir\u00f3. Vuelve a conectar.'); }
       else if (err.code === 'DRIVE_FORBIDDEN') { this._notifications.error('Permiso denegado.'); }
       else if (err.code === 'DRIVE_RATE_LIMIT') { this._notifications.error('L\u00edmite temporal de Google.'); }
       else if (err.message && err.message.includes('revisi\u00f3n del proyecto cambi\u00f3')) { this._notifications.error('Hubo cambios locales durante la subida. Vuelve a intentar.'); }
@@ -205,8 +301,7 @@ class App {
       try { await this._updateProjectAndStatus(); } catch (_) {}
     } finally {
       this._isDriveSyncing = false;
-      saveBtn.disabled = false; connectBtn.disabled = false; disconnectBtn.disabled = false;
-      saveBtn.textContent = 'Guardar en Drive';
+      saveBtn.disabled = false; saveBtn.textContent = 'Guardar en Drive';
     }
   }
 
@@ -220,12 +315,10 @@ class App {
     const confirmBtn = document.getElementById('drive-open-confirm-btn');
     const cancelBtn = document.getElementById('drive-open-cancel-btn');
     let selectedProject = null;
-    let remoteProjects = [];
 
     function showLoading() { loadingEl.classList.remove('hidden'); listEl.classList.add('hidden'); emptyEl.classList.add('hidden'); errorEl.classList.add('hidden'); confirmBtn.classList.add('hidden'); }
     function showEmpty() { loadingEl.classList.add('hidden'); listEl.classList.add('hidden'); emptyEl.classList.remove('hidden'); errorEl.classList.add('hidden'); confirmBtn.classList.add('hidden'); }
     function showError(msg) { loadingEl.classList.add('hidden'); listEl.classList.add('hidden'); emptyEl.classList.add('hidden'); errorEl.classList.remove('hidden'); errorEl.textContent = msg; confirmBtn.classList.add('hidden'); }
-
     function showList(projects) {
       loadingEl.classList.add('hidden'); listEl.classList.remove('hidden'); emptyEl.classList.add('hidden'); errorEl.classList.add('hidden');
       confirmBtn.classList.remove('hidden'); listEl.innerHTML = ''; selectedProject = null; confirmBtn.disabled = true;
@@ -238,22 +331,19 @@ class App {
         listEl.appendChild(li);
       }
     }
-
     function closeDialog() { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); }
     const onCancel = () => closeDialog();
     const onConfirm = async () => { if (!selectedProject) return; closeDialog(); await this._handleImportFromDrive(selectedProject); };
-    cancelBtn.addEventListener('click', onCancel);
-    confirmBtn.addEventListener('click', onConfirm);
-
+    cancelBtn.addEventListener('click', onCancel); confirmBtn.addEventListener('click', onConfirm);
     dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false');
     showLoading(); cancelBtn.focus();
     try {
-      remoteProjects = await this._drive.listRemoteProjects();
-      remoteProjects.length === 0 ? showEmpty() : showList(remoteProjects);
+      const projects = await this._drive.listRemoteProjects();
+      projects.length === 0 ? showEmpty() : showList(projects);
     } catch (err) {
-      console.error('Error al listar proyectos:', err);
-      if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); showError('La sesi\u00f3n de Google Drive expir\u00f3.'); }
-      else { showError(`Error al buscar proyectos: ${err.message}`); }
+      console.error(err);
+      if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); showError('La sesi\u00f3n de Drive expir\u00f3.'); }
+      else { showError(`Error: ${err.message}`); }
     }
   }
 
@@ -263,26 +353,17 @@ class App {
     try {
       const result = await this._sync.openProjectFromDrive(remoteProject,
         (msg) => this._status.showDriveProgress(msg),
-        async (conflict) => new Promise((resolve) => {
-          let question = conflict.reason && conflict.reason.includes('pendientes')
-            ? `Hay cambios locales pendientes... \u00bfReemplazar?`
-            : `\u00bfReemplazar la copia local con la versi\u00f3n de Drive?`;
-          resolve(confirm(question) ? 'replace' : 'cancel');
-        })
+        async (conflict) => new Promise((resolve) => { resolve(confirm('\u00bfReemplazar la copia local con la versi\u00f3n de Drive?') ? 'replace' : 'cancel'); })
       );
       this._project = await this._storage.getProject(remoteProject.projectId);
       document.getElementById('project-name').textContent = this._project.name;
       await this._refreshProducts();
       await this._updateProjectAndStatus();
-      this._notifications.success(`Proyecto "${result.project.name}" abierto desde Google Drive.`);
+      this._notifications.success(`Proyecto "${result.project.name}" abierto desde Drive.`);
     } catch (err) {
       if (err.conflict === 'skip') this._notifications.info(err.message);
-      else if (err.conflict === 'cancelled' || err.conflict === 'pending') this._notifications.info(err.message || 'Apertura cancelada.');
-      else {
-        console.error('Error al abrir desde Drive:', err);
-        if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); this._notifications.error('Sesi\u00f3n expirada.'); }
-        else this._notifications.error(`Error: ${err.message}`);
-      }
+      else if (err.conflict === 'cancelled') this._notifications.info('Apertura cancelada.');
+      else { console.error(err); this._notifications.error(`Error: ${err.message}`); }
       try { await this._updateProjectAndStatus(); } catch (_) {}
     } finally { this._isDriveSyncing = false; }
   }
@@ -293,8 +374,7 @@ class App {
     try {
       const product = await this._productService.getProduct(productId);
       if (!product) { this._notifications.error('Producto no encontrado.'); return; }
-      this._form.loadForEdit(product);
-      document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+      this._openProductEditor('edit', product);
     } catch (err) { console.error(err); this._notifications.error('Error al cargar.'); }
     finally { this._lockedProducts.delete(productId); }
   }
@@ -310,7 +390,7 @@ class App {
       await this._productService.duplicateProduct(original, originalBlob);
       await this._refreshProducts();
       await this._updateProjectAndStatus();
-      this._notifications.success('Producto duplicado correctamente.');
+      this._notifications.success('Producto duplicado.');
     } catch (err) { console.error(err); this._notifications.error(`Error: ${err.message}`); }
     finally { this._lockedProducts.delete(productId); }
   }
@@ -325,75 +405,20 @@ class App {
       await this._productService.deleteProduct(productId);
       await this._refreshProducts();
       await this._updateProjectAndStatus();
-      this._notifications.success('Producto eliminado correctamente.');
+      this._notifications.success('Producto eliminado.');
     } catch (err) { console.error(err); this._notifications.error(`Error: ${err.message}`); }
     finally { this._lockedProducts.delete(productId); }
   }
 
-  // ─── Catálogo ───
-
-  _handleCatalogConfig() {
-    const dialog = document.getElementById('catalog-config-dialog');
-    const titleInput = document.getElementById('catalog-title');
-    const previewBtn = document.getElementById('catalog-preview-btn');
-    const cancelBtn = document.getElementById('catalog-config-cancel-btn');
-    titleInput.value = this._project ? this._project.name : '';
-    dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); titleInput.focus();
-    const close = () => { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); previewBtn.removeEventListener('click', onPreview); cancelBtn.removeEventListener('click', onClose); };
-    const onClose = () => close();
-    const onPreview = async () => {
-      const showPrices = document.getElementById('catalog-show-prices').checked;
-      const showDescriptions = document.getElementById('catalog-show-descriptions').checked;
-      const showCodes = document.getElementById('catalog-show-codes').checked;
-      const catalogTitle = document.getElementById('catalog-title').value;
-      const companyName = document.getElementById('catalog-company').value;
-      close();
-      await this._handleCatalogPreview({ showPrices, showDescriptions, showCodes, catalogTitle, companyName });
-    };
-    cancelBtn.addEventListener('click', onClose);
-    previewBtn.addEventListener('click', onPreview);
-  }
-
-  async _handleCatalogPreview(options) {
-    try {
-      const products = await this._productService.listProducts(this._project.projectId);
-      const activeProducts = products.filter(p => p.active !== false).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-      if (activeProducts.length === 0) { this._notifications.info('Agrega al menos un producto activo.'); return; }
-      const imageMap = new Map();
-      for (const p of activeProducts) { if (p.imageId && !imageMap.has(p.imageId)) { const record = await this._productService.getImage(p.imageId); if (record) imageMap.set(p.imageId, record); } }
-      const previewDialog = document.getElementById('catalog-preview-dialog');
-      const content = document.getElementById('catalog-preview-content');
-      const exportBtn = document.getElementById('catalog-export-btn');
-      const backBtn = document.getElementById('catalog-preview-back-btn');
-      const catalogEl = this._catalogBuilder.build(this._project, activeProducts, imageMap, options);
-      content.innerHTML = ''; content.appendChild(catalogEl);
-      previewDialog.classList.remove('hidden'); previewDialog.setAttribute('aria-hidden', 'false');
-      await this._printManager.loadImages(imageMap, catalogEl);
-      const closePreview = () => { previewDialog.classList.add('hidden'); previewDialog.setAttribute('aria-hidden', 'true'); content.innerHTML = ''; this._printManager.destroy(); exportBtn.removeEventListener('click', onExport); backBtn.removeEventListener('click', onBack); };
-      const onBack = () => closePreview();
-      const onExport = async () => {
-        exportBtn.disabled = true; exportBtn.textContent = 'Preparando PDF\u2026'; exportBtn.setAttribute('aria-busy', 'true');
-        try { this._printManager._revokeAll(); await this._printManager.loadImages(imageMap, catalogEl); await this._printManager.print(catalogEl); }
-        catch (err) { console.error('Error al exportar:', err); }
-        finally { exportBtn.disabled = false; exportBtn.textContent = 'Exportar PDF'; exportBtn.removeAttribute('aria-busy'); }
-      };
-      exportBtn.addEventListener('click', onExport);
-      backBtn.addEventListener('click', onBack);
-    } catch (err) { console.error('Error al generar vista previa:', err); this._notifications.error('Error al generar la vista previa.'); }
-  }
-
-  // ─── Productos: guardar, toggle active, categorías, búsqueda, filtros ───
+  // ─── Product save ───
 
   async _handleSave({ data, editingProductId, expectedRevision, imageAction, imageFile }) {
     this._status.showSaving();
     try {
-      // Resolver nombre de categoría para compatibilidad
       if (data.categoryId) {
         const cat = this._project.categories.find(c => c.id === data.categoryId);
         if (cat) data.category = cat.name;
-      } else {
-        data.category = '';
-      }
+      } else { data.category = ''; }
 
       let imageRecord = null;
       if (imageAction === 'replace') {
@@ -403,20 +428,22 @@ class App {
         const optimized = await optimizeImage(imageFile);
         imageRecord = createImageRecord(this._project.projectId, optimized.blob, optimized.mimeType, optimized.width, optimized.height, optimized.optimizedSize);
       }
+
       if (editingProductId && expectedRevision !== null) {
         await this._productService.updateProduct(editingProductId, expectedRevision, this._project.projectId, data, imageAction, imageRecord);
-        this._notifications.success('Producto actualizado correctamente.');
+        this._notifications.success('Producto actualizado.');
       } else {
         await this._productService.createProduct(this._project.projectId, data, imageRecord);
-        this._notifications.success('Producto creado correctamente.');
+        this._notifications.success('Producto creado.');
       }
-      this._form.reset();
+
+      this._closeProductEditor();
       try { await this._refreshProducts(); await this._updateProjectAndStatus(); } catch (e) { console.warn(e); }
     } catch (err) {
       console.error('Error al guardar:', err);
-      if (err.name === 'ConflictError' && err.code === 'STALE_PRODUCT_REVISION') this._notifications.error('Este producto cambi\u00f3...');
-      else if (err.code === 'PRODUCT_NOT_FOUND' || err.message?.includes('ya no existe')) this._notifications.error('Este producto ya no existe.');
-      else this._notifications.error(`Error al guardar: ${err.message}`);
+      if (err.name === 'ConflictError') this._notifications.error('Este producto cambi\u00f3...');
+      else if (err.code === 'PRODUCT_NOT_FOUND') this._notifications.error('Este producto ya no existe.');
+      else this._notifications.error(`Error: ${err.message}`);
       try { await this._updateProjectAndStatus(); } catch (_) {}
     }
   }
@@ -424,11 +451,8 @@ class App {
   async _handleToggleActive(productId) {
     if (this._lockedProducts.has(productId)) { this._notifications.info('Procesando...'); return; }
     this._lockedProducts.add(productId);
-    try {
-      await this._productService.toggleProductActive(productId, this._project.projectId);
-      await this._refreshProducts();
-      await this._updateProjectAndStatus();
-    } catch (err) { console.error(err); this._notifications.error(`Error: ${err.message}`); }
+    try { await this._productService.toggleProductActive(productId, this._project.projectId); await this._refreshProducts(); await this._updateProjectAndStatus(); }
+    catch (err) { console.error(err); this._notifications.error(`Error: ${err.message}`); }
     finally { this._lockedProducts.delete(productId); }
   }
 
@@ -456,7 +480,7 @@ class App {
         const deleteBtn = document.createElement('button'); deleteBtn.className = 'btn btn--small btn--danger'; deleteBtn.textContent = 'Eliminar';
         deleteBtn.addEventListener('click', async () => {
           const count = await this._categoryProductCount(cat.id);
-          const msg = count > 0 ? `La categor\u00eda "${cat.name}" tiene ${count} producto(s). Se mover\u00e1n a "Sin categor\u00eda". \u00bfEliminar?` : `\u00bfEliminar categor\u00eda "${cat.name}"?`;
+          const msg = count > 0 ? `La categor\u00eda tiene ${count} producto(s). \u00bfEliminar?` : `\u00bfEliminar "${cat.name}"?`;
           if (!confirm(msg)) return;
           try { await this._productService.deleteCategory(this._project, cat.id); await this._refreshProducts(); await this._updateProjectAndStatus(); this._form.refreshCategories(this._project); this._refreshFilterCategories(); renderCategories(); }
           catch (err) { this._notifications.error(err.message); }
@@ -473,13 +497,12 @@ class App {
       catch (err) { this._notifications.error(err.message); }
     };
 
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCategory(); });
     addBtn.addEventListener('click', addCategory);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCategory(); });
     closeBtn.addEventListener('click', () => { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); });
 
     renderCategories();
-    dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false');
-    input.focus();
+    dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); input.focus();
   }
 
   async _categoryProductCount(categoryId) {
@@ -490,12 +513,10 @@ class App {
   _refreshFilterCategories() {
     const sel = document.getElementById('filter-category');
     const val = sel.value;
-    sel.innerHTML = '<option value="">Todas las categor\u00edas</option><option value="__none">Sin categor\u00eda</option>';
+    sel.innerHTML = '<option value="">Todas</option><option value="__none">Sin categor\u00eda</option>';
     if (this._project && this._project.categories) {
       for (const cat of this._project.categories) {
-        const opt = document.createElement('option');
-        opt.value = cat.id; opt.textContent = cat.name;
-        sel.appendChild(opt);
+        const opt = document.createElement('option'); opt.value = cat.id; opt.textContent = cat.name; sel.appendChild(opt);
       }
     }
     sel.value = val;
@@ -514,9 +535,63 @@ class App {
     } catch (err) { console.error('Error al actualizar listado:', err); }
   }
 
+  // ─── Cat\u00e1logo ───
+
+  _handleCatalogConfig() {
+    const dialog = document.getElementById('catalog-config-dialog');
+    const titleInput = document.getElementById('catalog-title');
+    const previewBtn = document.getElementById('catalog-preview-btn');
+    const cancelBtn = document.getElementById('catalog-config-cancel-btn');
+    titleInput.value = this._project ? this._project.name : '';
+    dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); titleInput.focus();
+    const close = () => { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); };
+    cancelBtn.addEventListener('click', close);
+    previewBtn.addEventListener('click', async () => {
+      const opts = {
+        showPrices: document.getElementById('catalog-show-prices').checked,
+        showDescriptions: document.getElementById('catalog-show-descriptions').checked,
+        showCodes: document.getElementById('catalog-show-codes').checked,
+        catalogTitle: document.getElementById('catalog-title').value,
+        companyName: document.getElementById('catalog-company').value
+      };
+      close();
+      await this._handleCatalogPreview(opts);
+    }, { once: true });
+  }
+
+  async _handleCatalogPreview(options) {
+    try {
+      const products = await this._productService.listProducts(this._project.projectId);
+      const activeProducts = products.filter(p => p.active !== false).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      if (activeProducts.length === 0) { this._notifications.info('Agrega al menos un producto activo.'); return; }
+      const imageMap = new Map();
+      for (const p of activeProducts) { if (p.imageId && !imageMap.has(p.imageId)) { const record = await this._productService.getImage(p.imageId); if (record) imageMap.set(p.imageId, record); } }
+      const previewDialog = document.getElementById('catalog-preview-dialog');
+      const content = document.getElementById('catalog-preview-content');
+      const catalogEl = this._catalogBuilder.build(this._project, activeProducts, imageMap, options);
+      content.innerHTML = ''; content.appendChild(catalogEl);
+      previewDialog.classList.remove('hidden'); previewDialog.setAttribute('aria-hidden', 'false');
+      await this._printManager.loadImages(imageMap, catalogEl);
+      const closePreview = () => { previewDialog.classList.add('hidden'); previewDialog.setAttribute('aria-hidden', 'true'); content.innerHTML = ''; this._printManager.destroy(); };
+      document.getElementById('catalog-preview-back-btn').addEventListener('click', closePreview, { once: true });
+      document.getElementById('catalog-export-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('catalog-export-btn');
+        btn.disabled = true; btn.textContent = 'Preparando PDF\u2026';
+        try { await this._printManager.loadImages(imageMap, catalogEl); await this._printManager.print(catalogEl); }
+        catch (err) { console.error(err); }
+        finally { btn.disabled = false; btn.textContent = 'Exportar PDF'; }
+      }, { once: true });
+    } catch (err) { console.error(err); this._notifications.error('Error al generar vista previa.'); }
+  }
+
   async _updateProjectAndStatus() {
     this._project = await this._storage.getProject(this._project.projectId);
-    if (this._project) { this._status.update(this._project); this._form.refreshCategories(this._project); this._refreshFilterCategories(); }
+    if (this._project) {
+      this._status.update(this._project);
+      this._form.refreshCategories(this._project);
+      this._refreshFilterCategories();
+      if (this._activeSection === 'project') this._updateProjectSection();
+    }
   }
 }
 
