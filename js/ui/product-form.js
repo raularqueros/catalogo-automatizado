@@ -205,10 +205,7 @@ export class ProductForm {
     } catch (err) {
       console.error('Error al guardar (gestionado por app.js):', err);
     } finally {
-    this._isSaving = false;
-    this._lastValidCategory = '';
-    this._savedProject = null;
-    this._onCreateCategory = null;
+      this._isSaving = false;
       this._setSavingState(false);
     }
   }

@@ -258,6 +258,7 @@ export class IndexedDbProvider extends StorageProvider {
             storedProduct.price = d.price;
             storedProduct.sku = d.sku ? d.sku.trim() : '';
             storedProduct.category = d.category ? d.category.trim() : '';
+            storedProduct.categoryId = d.categoryId || null;
             storedProduct.revision += 1;
             storedProduct.updatedAt = getTimestamp();
 

@@ -115,9 +115,20 @@ export class ProductService {
 
   // ─── Categorías ───
 
+  _normalizeName(name) {
+    return name.trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
   async createCategory(project, name) {
     const trimmed = name.trim();
-    if (!trimmed) throw new Error('El nombre de la categoría no puede estar vacío.');
+    if (!trimmed) throw new Error('El nombre de la categor\u00eda no puede estar vac\u00edo.');
+    const normalized = this._normalizeName(trimmed);
+    const existing = project.categories.find(c => this._normalizeName(c.name) === normalized);
+    if (existing) return existing;
     const now = getTimestamp();
     const cat = { id: generateId(), name: trimmed, createdAt: now, updatedAt: now };
     project.categories.push(cat);
@@ -131,9 +142,14 @@ export class ProductService {
 
   async renameCategory(project, categoryId, newName) {
     const trimmed = newName.trim();
-    if (!trimmed) throw new Error('El nombre de la categoría no puede estar vacío.');
+    if (!trimmed) throw new Error('El nombre de la categor\u00eda no puede estar vac\u00edo.');
     const cat = project.categories.find(c => c.id === categoryId);
-    if (!cat) throw new Error('Categoría no encontrada.');
+    if (!cat) throw new Error('Categor\u00eda no encontrada.');
+    const normalized = this._normalizeName(trimmed);
+    const normalizedCurrent = this._normalizeName(cat.name);
+    if (normalized === normalizedCurrent) return cat;
+    const duplicate = project.categories.find(c => c.id !== categoryId && this._normalizeName(c.name) === normalized);
+    if (duplicate) throw new Error('Ya existe una categor\u00eda con ese nombre.');
     const now = getTimestamp();
     cat.name = trimmed;
     cat.updatedAt = now;
