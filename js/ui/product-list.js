@@ -79,16 +79,17 @@ export class ProductList {
 
     const imgHtml = product.imageId
       ? `<div class="product-card__image-wrapper"><img class="product-card__image" data-image-id="${product.imageId}" alt="${escapeHtml(product.name)}" /></div>`
-      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true">\u{1F5BC}\uFE0E</span></div>`;
+      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true"></span></div>`;
 
     const catName = this._getCategoryName ? this._getCategoryName(product.categoryId) : (product.category || '');
     const catHtml = catName ? `<span class="product-card__category">${escapeHtml(catName)}</span>` : '';
     const skuHtml = product.sku ? `<span class="product-card__sku">C\u00f3digo: ${escapeHtml(product.sku)}</span>` : '';
     const descHtml = product.description ? `<p class="product-card__description">${escapeHtml(truncateText(product.description, 100))}</p>` : '';
     const activeLabel = product.active === false ? 'Inactivo' : 'Activo';
-    const activeClass = product.active === false ? 'btn--outline' : 'btn--primary';
+    const toggleLabel = product.active === false ? 'Activar' : 'Inactivar';
+    const statusHtml = `<span class="product-card__status product-card__status--${product.active === false ? 'inactive' : 'active'}">${activeLabel}</span>`;
 
-    card.innerHTML = `${imgHtml}<div class="product-card__body"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><p class="product-card__price">${formatPrice(product.price)}</p>${skuHtml}${catHtml}${descHtml}</div><div class="product-card__actions"><button class="btn btn--small ${activeClass} product-card__toggle-active" data-id="${product.id}" type="button">${activeLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
+    card.innerHTML = `${imgHtml}<div class="product-card__body"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><p class="product-card__price">${formatPrice(product.price)}</p>${skuHtml}${catHtml}${statusHtml}${descHtml}</div><div class="product-card__actions"><button class="btn btn--small btn--outline product-card__toggle-active" data-id="${product.id}" type="button">${toggleLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
     return card;
   }
 
@@ -99,16 +100,16 @@ export class ProductList {
 
     const imgHtml = product.imageId
       ? `<div class="product-card__image-wrapper"><img class="product-card__image" data-image-id="${product.imageId}" alt="${escapeHtml(product.name)}" /></div>`
-      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true">\u{1F5BC}\uFE0E</span></div>`;
+      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true"></span></div>`;
 
     const catName = this._getCategoryName ? this._getCategoryName(product.categoryId) : (product.category || '');
     const catHtml = catName ? `<span class="product-card__category">${escapeHtml(catName)}</span>` : '';
     const activeLabel = product.active === false ? 'Inactivo' : 'Activo';
-    const activeClass = product.active === false ? 'btn--outline' : 'btn--primary';
+    const toggleLabel = product.active === false ? 'Activar' : 'Inactivar';
     const statusHtml = `<span class="product-card__status product-card__status--${product.active === false ? 'inactive' : 'active'}">${activeLabel}</span>`;
     const priceHtml = `<span class="product-card__price">${formatPrice(product.price)}</span>`;
 
-    card.innerHTML = `${imgHtml}<div class="product-card__body"><div class="product-card__info"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><div class="product-card__meta-row">${priceHtml}${catHtml}${statusHtml}</div></div></div><div class="product-card__actions"><button class="btn btn--small ${activeClass} product-card__toggle-active" data-id="${product.id}" type="button">${activeLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
+    card.innerHTML = `${imgHtml}<div class="product-card__body"><div class="product-card__info"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><div class="product-card__meta-row">${priceHtml}${catHtml}${statusHtml}</div></div></div><div class="product-card__actions"><button class="btn btn--small btn--outline product-card__toggle-active" data-id="${product.id}" type="button">${toggleLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
     return card;
   }
 
@@ -119,7 +120,7 @@ export class ProductList {
 
     const imgHtml = product.imageId
       ? `<div class="product-card__image-wrapper"><img class="product-card__image" data-image-id="${product.imageId}" alt="${escapeHtml(product.name)}" /></div>`
-      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true">\u{1F5BC}\uFE0E</span></div>`;
+      : `<div class="product-card__image-wrapper product-card__image-wrapper--empty"><span class="product-card__no-image" aria-hidden="true"></span></div>`;
 
     const catName = this._getCategoryName ? this._getCategoryName(product.categoryId) : (product.category || '');
     const activeLabel = product.active === false ? 'Inactivo' : 'Activo';
@@ -144,13 +145,13 @@ export class ProductList {
 
     const imgHtml = product.imageId
       ? `<div class="product-list-row__image-wrapper"><img class="product-list-row__image" data-image-id="${product.imageId}" alt="${escapeHtml(product.name)}" /></div>`
-      : `<div class="product-list-row__image-wrapper product-list-row__image-wrapper--empty"><span class="product-list-row__no-image" aria-hidden="true">\u{1F5BC}\uFE0E</span></div>`;
+      : `<div class="product-list-row__image-wrapper product-list-row__image-wrapper--empty"><span class="product-list-row__no-image" aria-hidden="true"></span></div>`;
 
     const catName = this._getCategoryName ? this._getCategoryName(product.categoryId) : (product.category || '');
     const activeLabel = product.active === false ? 'Inactivo' : 'Activo';
-    const activeClass = product.active === false ? 'btn--outline' : 'btn--primary';
+    const toggleLabel = product.active === false ? 'Activar' : 'Inactivar';
 
-    row.innerHTML = `${imgHtml}<div class="product-list-row__info"><span class="product-list-row__name">${escapeHtml(product.name)}</span>${product.sku ? `<span class="product-list-row__sku">${escapeHtml(product.sku)}</span>` : ''}${catName ? `<span class="product-list-row__category">${escapeHtml(catName)}</span>` : ''}<span class="product-list-row__status">${product.active === false ? 'Inactivo' : 'Activo'}</span></div><span class="product-list-row__price">${formatPrice(product.price)}</span><div class="product-list-row__actions"><button class="btn btn--small ${activeClass} product-card__toggle-active" data-id="${product.id}" type="button">${activeLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
+    row.innerHTML = `${imgHtml}<div class="product-list-row__info"><span class="product-list-row__name">${escapeHtml(product.name)}</span>${product.sku ? `<span class="product-list-row__sku">${escapeHtml(product.sku)}</span>` : ''}${catName ? `<span class="product-list-row__category">${escapeHtml(catName)}</span>` : ''}<span class="product-list-row__status">${activeLabel}</span></div><span class="product-list-row__price">${formatPrice(product.price)}</span><div class="product-list-row__actions"><button class="btn btn--small btn--outline product-card__toggle-active" data-id="${product.id}" type="button">${toggleLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
     return row;
   }
 

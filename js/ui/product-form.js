@@ -303,9 +303,10 @@ export class ProductForm {
     this._elements.removeImageBtn.classList.add('hidden');
     this._elements.changeImageBtn.classList.add('hidden');
     this._elements.submitBtn.textContent = 'Guardar producto';
+    this._elements.submitBtn.setAttribute('aria-label', 'Guardar producto');
     this._elements.categorySelect.value = '';
     this._elements.formTitle.textContent = 'Nuevo producto';
-    this._elements.cancelBtn.classList.add('hidden');
+    this._elements.cancelBtn.classList.remove('hidden');
 
     this._elements.form.removeAttribute('aria-busy');
   }
@@ -323,6 +324,7 @@ export class ProductForm {
     this._elements.categorySelect.value = product.categoryId || '';
     this._elements.descriptionInput.value = product.description || '';
     this._elements.submitBtn.textContent = 'Guardar cambios';
+    this._elements.submitBtn.setAttribute('aria-label', 'Guardar cambios');
     this._elements.formTitle.textContent = 'Editar producto';
     this._elements.cancelBtn.classList.remove('hidden');
 

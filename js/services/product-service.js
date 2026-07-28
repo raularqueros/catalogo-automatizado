@@ -50,13 +50,11 @@ export class ProductService {
   async toggleProductActive(productId, projectId) {
     const product = await this._storage.getProduct(productId);
     if (!product) throw new Error('Producto no encontrado.');
-    product.active = !product.active;
-    product.revision += 1;
-    product.updatedAt = getTimestamp();
+    const nextActive = !product.active;
     const result = await this._storage.updateProductAtomic({
       projectId,
       productId,
-      expectedRevision: product.revision - 1,
+      expectedRevision: product.revision,
       productData: {
         name: product.name,
         description: product.description,
@@ -68,6 +66,8 @@ export class ProductService {
       imageAction: 'keep',
       newImageRecord: null
     });
+    result.product.active = nextActive;
+    await this._storage.updateProduct(result.product);
     return result.product;
   }
 

@@ -65,10 +65,10 @@ export class StorageStatus {
 
   showDriveProgress(message) {
     if (!this._element) return;
-    const text = message || 'Guardando en Drive\u2026';
-    this._element.textContent = text;
-    this._element.title = text;
-    this._element.setAttribute('aria-label', text);
+    const detail = message || 'Guardando en Drive\u2026';
+    this._element.textContent = 'Guardando\u2026';
+    this._element.title = detail;
+    this._element.setAttribute('aria-label', detail);
     this._element.className = 'storage-status storage-status--syncing';
   }
 }

@@ -12,30 +12,32 @@
   <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
 
   <header class="header">
-    <div class="header__brand">
-      <svg class="header__brand-mark" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="brandGrad" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#7C86FF"/>
-            <stop offset="1" stop-color="#4F5DFF"/>
-          </linearGradient>
-        </defs>
-        <rect x="7" y="2" width="20" height="20" rx="6" fill="#2A2F45"/>
-        <rect x="4" y="8" width="20" height="20" rx="6" fill="#3A3F5C"/>
-        <rect x="1" y="14" width="20" height="19" rx="6" fill="url(#brandGrad)"/>
-        <path d="M8 23.5L10.5 26L15 21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <div>
-        <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
-        <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
+    <div class="header__inner">
+      <div class="header__brand">
+        <svg class="header__brand-mark" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="brandGrad" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#7C86FF"/>
+              <stop offset="1" stop-color="#4F5DFF"/>
+            </linearGradient>
+          </defs>
+          <rect x="7" y="2" width="20" height="20" rx="6" fill="#2A2F45"/>
+          <rect x="4" y="8" width="20" height="20" rx="6" fill="#3A3F5C"/>
+          <rect x="1" y="14" width="20" height="19" rx="6" fill="url(#brandGrad)"/>
+          <path d="M8 23.5L10.5 26L15 21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="header__brand-copy">
+          <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
+          <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
+        </div>
       </div>
+      <nav class="header-nav" aria-label="Navegaci&oacute;n principal">
+        <button class="header-nav__btn header-nav__btn--active" data-section="products" aria-pressed="true">Productos</button>
+        <button class="header-nav__btn" data-section="catalog" aria-pressed="false">Cat&aacute;logo</button>
+        <button class="header-nav__btn" data-section="project" aria-pressed="false">Proyecto</button>
+      </nav>
+      <div id="storage-status" class="storage-status" role="status" aria-live="polite">Inicializando&hellip;</div>
     </div>
-    <nav class="header-nav" aria-label="Navegaci&oacute;n principal">
-      <button class="header-nav__btn header-nav__btn--active" data-section="products" aria-pressed="true">Productos</button>
-      <button class="header-nav__btn" data-section="catalog" aria-pressed="false">Cat&aacute;logo</button>
-      <button class="header-nav__btn" data-section="project" aria-pressed="false">Proyecto</button>
-    </nav>
-    <div id="storage-status" class="storage-status" role="status" aria-live="polite">Inicializando&hellip;</div>
   </header>
 
   <main id="main-content" class="main-content">
@@ -56,41 +58,37 @@
           </svg>
           <input type="search" id="search-input" class="form-input list-toolbar__search" placeholder="Buscar productos&hellip;">
         </div>
-        <div class="list-toolbar__row-mobile">
-          <button id="filters-toggle" class="btn btn--small btn--outline" type="button" aria-expanded="false" aria-controls="filters-panel" title="Abrir panel de filtros">
-            <span id="filters-toggle-text">Filtros</span>
-            <span id="filters-badge" class="filters-badge hidden" aria-hidden="true"></span>
-          </button>
-          <select id="sort-by" class="form-input">
-            <option value="recent">M&aacute;s recientes</option>
-            <option value="oldest">M&aacute;s antiguos</option>
-            <option value="name_asc">Nombre A&ndash;Z</option>
-            <option value="name_desc">Nombre Z&ndash;A</option>
-            <option value="price_asc">Precio menor a mayor</option>
-            <option value="price_desc">Precio mayor a menor</option>
-          </select>
-          <button id="mobile-new-product-btn" class="btn btn--small btn--primary" type="button" title="Nuevo producto">+ Nuevo</button>
-        </div>
-        <div class="list-toolbar__filters list-toolbar__filters--desktop">
-          <select id="filter-category" class="form-input">
-            <option value="">Todas las categor&iacute;as</option>
-            <option value="__none">Sin categor&iacute;a</option>
-          </select>
-          <select id="filter-status" class="form-input">
-            <option value="all">Todos</option>
-            <option value="active" selected>Activos</option>
-            <option value="inactive">Inactivos</option>
-          </select>
-
-          <button id="manage-categories-btn" class="btn btn--small btn--outline" type="button">Categor&iacute;as</button>
-        </div>
+        <button id="filters-toggle" class="btn btn--small btn--outline" type="button" aria-expanded="false" aria-controls="filters-panel" title="Abrir panel de filtros">
+          <span id="filters-toggle-text">Filtros</span>
+          <span id="filters-badge" class="filters-badge hidden" aria-hidden="true"></span>
+        </button>
+        <select id="filter-category" class="form-input list-toolbar__desktop-control" aria-label="Filtrar por categor&iacute;a">
+          <option value="">Todas las categor&iacute;as</option>
+          <option value="__none">Sin categor&iacute;a</option>
+        </select>
+        <select id="filter-status" class="form-input list-toolbar__desktop-control" aria-label="Filtrar por estado">
+          <option value="all">Todos</option>
+          <option value="active" selected>Activos</option>
+          <option value="inactive">Inactivos</option>
+        </select>
+        <select id="sort-by" class="form-input" aria-label="Ordenar productos">
+          <option value="recent">M&aacute;s recientes</option>
+          <option value="oldest">M&aacute;s antiguos</option>
+          <option value="name_asc">Nombre A&ndash;Z</option>
+          <option value="name_desc">Nombre Z&ndash;A</option>
+          <option value="price_asc">Precio menor a mayor</option>
+          <option value="price_desc">Precio mayor a menor</option>
+        </select>
+        <button id="manage-categories-btn" class="btn btn--small btn--outline list-toolbar__desktop-control" type="button">Categor&iacute;as</button>
+        <button id="mobile-new-product-btn" class="btn btn--small btn--primary" type="button" title="Nuevo producto">+ Nuevo</button>
         <div class="list-toolbar__view list-toolbar__view--desktop" role="radiogroup" aria-label="Cambiar vista de productos">
           <button class="btn btn--small view-btn btn--primary" data-view="cards" type="button" aria-pressed="true">Tarjetas</button>
           <button class="btn btn--small view-btn btn--outline" data-view="compact" type="button" aria-pressed="false">Compacta</button>
           <button class="btn btn--small view-btn btn--outline" data-view="list" type="button" aria-pressed="false">Lista</button>
         </div>
+        <p id="result-count" class="list-toolbar__count" aria-live="polite"></p>
       </div>
-      <div id="filters-panel" class="filters-panel hidden" role="region" aria-label="Filtros de productos" hidden>
+      <div id="filters-panel" class="filters-panel" role="region" aria-label="Filtros de productos" hidden>
         <div class="filters-panel__body">
           <select id="filter-category-mobile" class="form-input">
             <option value="">Todas las categor&iacute;as</option>
@@ -109,7 +107,6 @@
           </div>
         </div>
       </div>
-      <p id="result-count" class="list-toolbar__count" aria-live="polite"></p>
 
       <div id="empty-state" class="empty-state">
         <div class="empty-state__illustration" aria-hidden="true">
@@ -142,10 +139,10 @@
         </div>
         <button class="btn btn--primary" id="catalog-config-btn" type="button">Configurar cat&aacute;logo</button>
       </div>
-      <div class="info-card">
-        <p id="catalog-summary-products">Productos totales: 0</p>
-        <p id="catalog-summary-active">Productos activos: 0</p>
-        <p id="catalog-summary-categories">Categor&iacute;as: 0</p>
+      <div class="info-card info-card--summary">
+        <p id="catalog-summary-products" class="info-card__metric">Productos totales: 0</p>
+        <p id="catalog-summary-active" class="info-card__metric">Productos activos: 0</p>
+        <p id="catalog-summary-categories" class="info-card__metric">Categor&iacute;as: 0</p>
         <p class="info-card__note">La exportaci&oacute;n PDF contin&uacute;a como funci&oacute;n experimental.</p>
       </div>
     </section>
@@ -158,10 +155,10 @@
           <p class="section-header__subtitle" id="project-subtitle">Tus datos se guardan primero en este navegador. Google Drive funciona como respaldo remoto adicional.</p>
         </div>
       </div>
-      <div class="info-card">
-        <p><strong>Nombre del proyecto:</strong> <span id="project-section-name"></span></p>
-        <p><strong>Estado local:</strong> <span id="project-local-status"></span></p>
-        <p><strong>Google Drive:</strong> <span id="project-drive-status"></span></p>
+      <div class="info-card info-card--project">
+        <p><strong>Nombre del proyecto</strong><span id="project-section-name"></span></p>
+        <p><strong>Estado local</strong><span id="project-local-status"></span></p>
+        <p><strong>Google Drive</strong><span id="project-drive-status"></span></p>
         <p id="project-last-sync" class="info-card__note"></p>
       </div>
       <div class="project-actions">
@@ -226,7 +223,7 @@
         </div>
         <div class="form-actions">
           <button type="submit" id="submit-product-btn" class="btn btn--primary btn--lg">Guardar producto</button>
-          <button type="button" id="cancel-btn" class="btn btn--outline btn--lg hidden">Cancelar</button>
+          <button type="button" id="cancel-btn" class="btn btn--outline btn--lg">Cancelar</button>
         </div>
       </form>
     </div>

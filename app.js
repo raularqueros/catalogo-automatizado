@@ -66,6 +66,7 @@ class App {
       await this._storage.initialize();
       await this._loadOrCreateProject();
       this._setupUI();
+      this._refreshFilterCategories();
       this._setActiveSection('products');
       await this._refreshProducts();
       this._updateUIForDriveState();
@@ -172,21 +173,31 @@ class App {
     document.getElementById('open-drive-btn').addEventListener('click', () => this._handleOpenFromDrive());
     document.getElementById('disconnect-drive-btn').addEventListener('click', () => this._handleDisconnectDrive());
 
-    // Debounced resize handler for mobile/desktop transitions
+    // Debounced resize handler for responsive renderer transitions
     let resizeTimer;
+    const getRenderRange = () => {
+      if (window.innerWidth <= 767) return 'mobile';
+      if (window.innerWidth < 1024) return 'tablet';
+      return 'desktop';
+    };
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         const wasMobile = this._isMobile;
+        const previousRange = this._renderRange;
         this._isMobile = window.innerWidth <= 767;
+        this._renderRange = getRenderRange();
         if (wasMobile !== this._isMobile) {
           this._viewMode = this._loadViewMode();
           this._updateViewButtons();
+        }
+        if (previousRange !== this._renderRange) {
           this._refreshProducts();
         }
       }, 200);
     });
     this._isMobile = window.innerWidth <= 767;
+    this._renderRange = getRenderRange();
 
     this._form.onSave((payload) => this._handleSave(payload));
     this._form.onSaveSuccess(() => this._closeProductEditor());
@@ -395,6 +406,10 @@ class App {
     const errorEl = document.getElementById('drive-projects-error');
     const confirmBtn = document.getElementById('drive-open-confirm-btn');
     const cancelBtn = document.getElementById('drive-open-cancel-btn');
+    const previousFocus = document.activeElement;
+    if (this._driveDialogAbort) this._driveDialogAbort.abort();
+    this._driveDialogAbort = new AbortController();
+    const { signal } = this._driveDialogAbort;
     let selectedProject = null;
     let remoteProjects = [];
 
@@ -413,11 +428,23 @@ class App {
         listEl.appendChild(li);
       }
     }
-    function closeDialog() { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); }
+    const closeDialog = () => {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+      this._driveDialogAbort.abort();
+      this._driveDialogAbort = null;
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+    };
     const onCancel = () => closeDialog();
     const onConfirm = async () => { if (!selectedProject) return; closeDialog(); await this._handleImportFromDrive(selectedProject); };
-    cancelBtn.addEventListener('click', onCancel);
-    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel, { signal });
+    confirmBtn.addEventListener('click', onConfirm, { signal });
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) closeDialog();
+    }, { signal });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeDialog();
+    }, { signal });
 
     dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false');
     showLoading(); cancelBtn.focus();
@@ -560,6 +587,18 @@ class App {
     const input = document.getElementById('new-category-input');
     const addBtn = document.getElementById('add-category-btn');
     const closeBtn = document.getElementById('categories-close-btn');
+    const previousFocus = document.activeElement;
+    if (this._categoriesDialogAbort) this._categoriesDialogAbort.abort();
+    this._categoriesDialogAbort = new AbortController();
+    const { signal } = this._categoriesDialogAbort;
+
+    const closeDialog = () => {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+      this._categoriesDialogAbort.abort();
+      this._categoriesDialogAbort = null;
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+    };
 
     const renderCategories = () => {
       list.innerHTML = '';
@@ -595,9 +634,15 @@ class App {
       catch (err) { this._notifications.error(err.message); }
     };
 
-    addBtn.addEventListener('click', addCategory);
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCategory(); });
-    closeBtn.addEventListener('click', () => { dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden', 'true'); });
+    addBtn.addEventListener('click', addCategory, { signal });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCategory(); }, { signal });
+    closeBtn.addEventListener('click', closeDialog, { signal });
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) closeDialog();
+    }, { signal });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeDialog();
+    }, { signal });
 
     renderCategories();
     dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); input.focus();
@@ -616,7 +661,7 @@ class App {
     if (cat && cat !== '__none') count++;
     if (status && status !== 'all') count++;
     if (count > 0) {
-      badge.textContent = '\u00b7 ' + count;
+      badge.textContent = String(count);
       badge.classList.remove('hidden');
     } else {
       badge.classList.add('hidden');
@@ -629,7 +674,7 @@ class App {
       document.getElementById('filter-category-mobile')
     ];
     const val = document.getElementById('filter-category').value;
-    const html = '<option value="">Todas</option><option value="__none">Sin categor\u00eda</option>';
+    const html = '<option value="">Todas las categor\u00edas</option><option value="__none">Sin categor\u00eda</option>';
     for (const sel of sets) {
       if (!sel) continue;
       sel.innerHTML = html;
@@ -669,14 +714,19 @@ class App {
     const titleInput = document.getElementById('catalog-title');
     const previewBtn = document.getElementById('catalog-preview-btn');
     const cancelBtn = document.getElementById('catalog-config-cancel-btn');
+    const previousFocus = document.activeElement;
+    if (this._catalogConfigAbort) this._catalogConfigAbort.abort();
+    this._catalogConfigAbort = new AbortController();
+    const { signal } = this._catalogConfigAbort;
     titleInput.value = this._project ? this._project.name : '';
     dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); titleInput.focus();
 
     const close = () => {
       dialog.classList.add('hidden');
       dialog.setAttribute('aria-hidden', 'true');
-      previewBtn.removeEventListener('click', onPreview);
-      cancelBtn.removeEventListener('click', onClose);
+      this._catalogConfigAbort.abort();
+      this._catalogConfigAbort = null;
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
     };
     const onClose = () => close();
     const onPreview = async () => {
@@ -690,8 +740,14 @@ class App {
       close();
       await this._handleCatalogPreview(opts);
     };
-    cancelBtn.addEventListener('click', onClose);
-    previewBtn.addEventListener('click', onPreview);
+    cancelBtn.addEventListener('click', onClose, { signal });
+    previewBtn.addEventListener('click', onPreview, { signal });
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) close();
+    }, { signal });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') close();
+    }, { signal });
   }
 
   async _handleCatalogPreview(options) {
