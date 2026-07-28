@@ -13,8 +13,22 @@
 
   <header class="header">
     <div class="header__brand">
-      <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
-      <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
+      <svg class="header__brand-mark" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="brandGrad" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#7C86FF"/>
+            <stop offset="1" stop-color="#4F5DFF"/>
+          </linearGradient>
+        </defs>
+        <rect x="7" y="2" width="20" height="20" rx="6" fill="#2A2F45"/>
+        <rect x="4" y="8" width="20" height="20" rx="6" fill="#3A3F5C"/>
+        <rect x="1" y="14" width="20" height="19" rx="6" fill="url(#brandGrad)"/>
+        <path d="M8 23.5L10.5 26L15 21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
+        <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
+      </div>
     </div>
     <nav class="header-nav" aria-label="Navegaci&oacute;n principal">
       <button class="header-nav__btn header-nav__btn--active" data-section="products" aria-pressed="true">Productos</button>
@@ -36,7 +50,12 @@
       </div>
 
       <div class="list-toolbar">
-        <input type="search" id="search-input" class="form-input list-toolbar__search" placeholder="Buscar productos&hellip;">
+        <div class="list-toolbar__search-wrap">
+          <svg class="list-toolbar__search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input type="search" id="search-input" class="form-input list-toolbar__search" placeholder="Buscar productos&hellip;">
+        </div>
         <div class="list-toolbar__row-mobile">
           <button id="filters-toggle" class="btn btn--small btn--outline" type="button" aria-expanded="false" aria-controls="filters-panel" title="Abrir panel de filtros">
             <span id="filters-toggle-text">Filtros</span>
@@ -93,10 +112,23 @@
       <p id="result-count" class="list-toolbar__count" aria-live="polite"></p>
 
       <div id="empty-state" class="empty-state">
-        <p class="empty-state__icon" aria-hidden="true">&#128230;</p>
+        <div class="empty-state__illustration" aria-hidden="true">
+          <div class="empty-state__illus-shape empty-state__illus-shape--back"></div>
+          <div class="empty-state__illus-shape empty-state__illus-shape--mid"></div>
+          <div class="empty-state__illus-shape empty-state__illus-shape--front">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+        </div>
         <p class="empty-state__title">A&uacute;n no hay productos</p>
         <p class="empty-state__text">Agregue su primer producto para comenzar a crear su cat&aacute;logo.</p>
-        <button id="empty-add-btn" class="btn btn--primary" type="button">Agregar primer producto</button>
+        <button id="empty-add-btn" class="btn btn--primary" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Agregar primer producto
+        </button>
       </div>
       <div id="product-list" class="product-list"></div>
     </section>

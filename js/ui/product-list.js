@@ -44,12 +44,13 @@ export class ProductList {
 
     const fragment = document.createDocumentFragment();
     const isMobile = window.innerWidth <= 767;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
 
     for (const product of products) {
       let card;
 
       if (viewMode === 'compact') {
-        card = isMobile ? this._buildMobileCompactCard(product) : this._buildCompactCard(product);
+        card = (isMobile || isTablet) ? this._buildMobileCompactCard(product) : this._buildCompactCard(product);
       } else if (viewMode === 'list') {
         card = this._buildListRow(product);
       } else {
@@ -104,8 +105,10 @@ export class ProductList {
     const catHtml = catName ? `<span class="product-card__category">${escapeHtml(catName)}</span>` : '';
     const activeLabel = product.active === false ? 'Inactivo' : 'Activo';
     const activeClass = product.active === false ? 'btn--outline' : 'btn--primary';
+    const statusHtml = `<span class="product-card__status product-card__status--${product.active === false ? 'inactive' : 'active'}">${activeLabel}</span>`;
+    const priceHtml = `<span class="product-card__price">${formatPrice(product.price)}</span>`;
 
-    card.innerHTML = `${imgHtml}<div class="product-card__body"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><p class="product-card__price">${formatPrice(product.price)}</p>${catHtml}</div><div class="product-card__actions"><button class="btn btn--small ${activeClass} product-card__toggle-active" data-id="${product.id}" type="button">${activeLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
+    card.innerHTML = `${imgHtml}<div class="product-card__body"><div class="product-card__info"><h3 class="product-card__name">${escapeHtml(product.name)}</h3><div class="product-card__meta-row">${priceHtml}${catHtml}${statusHtml}</div></div></div><div class="product-card__actions"><button class="btn btn--small ${activeClass} product-card__toggle-active" data-id="${product.id}" type="button">${activeLabel}</button><button class="btn btn--small btn--outline product-card__edit" data-id="${product.id}" type="button">Editar</button><button class="btn btn--small btn--outline product-card__duplicate" data-id="${product.id}" type="button">Duplicar</button><button class="btn btn--small btn--danger product-card__delete" data-id="${product.id}" type="button">Eliminar</button></div>`;
     return card;
   }
 

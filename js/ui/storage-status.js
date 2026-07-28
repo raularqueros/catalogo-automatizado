@@ -7,53 +7,68 @@ export class StorageStatus {
     if (!this._element || !project) return;
 
     const sync = project.syncMetadata;
-    const parts = [];
     let className = 'storage-status--local';
+    let shortText = '';
+    let fullParts = [];
 
     if (sync.status === 'syncing') {
-      parts.push('Guardando\u2026');
+      shortText = 'Guardando\u2026';
+      fullParts.push('Guardando\u2026');
       className = 'storage-status--syncing';
     } else if (sync.status === 'error') {
-      parts.push('Error al guardar');
+      shortText = 'Error';
+      fullParts.push('Error al guardar');
       className = 'storage-status--error';
     } else {
-      parts.push('Guardado localmente');
+      fullParts.push('Guardado localmente');
       if (sync.status === 'pending') {
-        parts.push('Cambios pendientes');
+        shortText = 'Cambios pendientes';
+        fullParts.push('Cambios pendientes');
         className = 'storage-status--pending';
+      } else {
+        shortText = 'Guardado local';
       }
     }
 
     if (sync.cloudProvider === 'google-drive' && sync.status === 'synced') {
+      shortText = 'Sincronizado';
+      fullParts.push('Sincronizado con Google Drive');
       const lastSync = sync.lastCloudSync ? new Date(sync.lastCloudSync).toLocaleString() : '';
-      parts.push('Sincronizado con Google Drive');
       className = 'storage-status--synced';
-      if (lastSync) {
-        this._element.textContent = parts.join(' \u00b7 ');
-        this._element.title = `\u00daltima sincronizaci\u00f3n: ${lastSync}`;
-      } else {
-        this._element.textContent = parts.join(' \u00b7 ');
-      }
+      this._element.textContent = shortText;
+      this._element.title = fullParts.join(' \u00b7 ') + (lastSync ? `\n\u00daltima sincronizaci\u00f3n: ${lastSync}` : '');
     } else if (sync.cloudProvider === 'google-drive' && sync.status === 'pending') {
-      parts.push('Google Drive: cambios pendientes');
-      this._element.textContent = parts.join(' \u00b7 ');
+      shortText = 'Drive pendiente';
+      fullParts.push('Google Drive: cambios pendientes');
+      this._element.textContent = shortText;
+      this._element.title = fullParts.join(' \u00b7 ');
+    } else if (!sync.cloudProvider || sync.cloudProvider !== 'google-drive') {
+      fullParts.push('Google Drive a\u00fan no conectado');
+      this._element.textContent = shortText;
+      this._element.title = fullParts.join(' \u00b7 ');
     } else {
-      parts.push('Google Drive a\u00fan no conectado');
-      this._element.textContent = parts.join(' \u00b7 ');
+      this._element.textContent = shortText;
+      this._element.title = fullParts.join(' \u00b7 ');
     }
 
     this._element.className = `storage-status ${className}`;
+    this._element.setAttribute('aria-label', this._element.title || shortText);
   }
 
   showSaving() {
     if (!this._element) return;
     this._element.textContent = 'Guardando\u2026';
+    this._element.title = 'Guardando\u2026';
+    this._element.setAttribute('aria-label', 'Guardando\u2026');
     this._element.className = 'storage-status storage-status--syncing';
   }
 
   showDriveProgress(message) {
     if (!this._element) return;
-    this._element.textContent = message || 'Guardando en Google Drive\u2026';
+    const text = message || 'Guardando en Drive\u2026';
+    this._element.textContent = text;
+    this._element.title = text;
+    this._element.setAttribute('aria-label', text);
     this._element.className = 'storage-status storage-status--syncing';
   }
 }
