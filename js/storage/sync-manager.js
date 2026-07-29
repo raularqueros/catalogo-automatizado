@@ -27,6 +27,13 @@ export class SyncManager {
   async markPending(project) {
     project.syncMetadata.status = 'pending';
     project.syncMetadata.lastLocalUpdate = getTimestamp();
+    project.syncMetadata.errorMessage = null;
+    await this._storage.updateProject(project);
+  }
+
+  async markError(project, message) {
+    project.syncMetadata.status = 'error';
+    project.syncMetadata.errorMessage = message || 'No se pudo completar el respaldo en Google Drive.';
     await this._storage.updateProject(project);
   }
 

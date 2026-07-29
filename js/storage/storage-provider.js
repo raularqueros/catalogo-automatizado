@@ -7,6 +7,7 @@
 export class StorageProvider {
   async initialize() { throw new Error('No implementado'); }
   async createProject(project) { throw new Error('No implementado'); }
+  async createProjectAndSetActive(project) { throw new Error('No implementado'); }
   async getProject(projectId) { throw new Error('No implementado'); }
   async updateProject(project) { throw new Error('No implementado'); }
   async listProjects() { throw new Error('No implementado'); }

@@ -77,6 +77,26 @@ export class IndexedDbProvider extends StorageProvider {
     return this._writeOne('projects', (store) => { store.add(project); return project; });
   }
 
+  async createProjectAndSetActive(project) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const db = await this._getDb();
+        const transaction = db.transaction(['projects', 'metadata'], 'readwrite');
+        transaction.objectStore('projects').add(project);
+        transaction.objectStore('metadata').put({ key: 'activeProjectId', value: project.projectId });
+        transaction.oncomplete = () => resolve(project);
+        transaction.onerror = event => reject(new Error(
+          `Error al crear el proyecto: ${event.target.error?.message || 'desconocido'}`
+        ));
+        transaction.onabort = event => reject(new Error(
+          `Creaci\u00f3n de proyecto abortada: ${event.target.error?.message || 'desconocido'}`
+        ));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
   async getProject(projectId) {
     return this._readOne('projects', (store) => store.get(projectId));
   }
@@ -175,8 +195,8 @@ export class IndexedDbProvider extends StorageProvider {
         let result;
         try { result = cb(t.objectStore(storeName)); } catch (err) { reject(err); return; }
         t.oncomplete = () => resolve(result);
-        t.onerror = (e) => reject(new Error(`Error en escritura: ${e.target.error?.message || 'desconocido'}`));
-        t.onabort = (e) => reject(new Error(`Operación abortada: ${e.target.error?.message || 'desconocido'}`));
+        t.onerror = (e) => reject(_writeError('Error en escritura', e, t));
+        t.onabort = (e) => reject(_writeError('Operación abortada', e, t));
       } catch (err) { reject(err); }
     });
   }
@@ -214,8 +234,8 @@ export class IndexedDbProvider extends StorageProvider {
         t.objectStore('products').add(product);
 
         t.oncomplete = () => resolve({ product, project: updatedProject });
-        t.onerror = (e) => reject(new Error(`Error al crear: ${e.target.error?.message || 'desconocido'}`));
-        t.onabort = (e) => reject(new Error(`Creación abortada: ${e.target.error?.message || 'desconocido'}`));
+        t.onerror = (e) => reject(_writeError('Error al crear', e, t));
+        t.onabort = (e) => reject(_writeError('Creación abortada', e, t));
       } catch (err) { reject(err); }
     });
   }
@@ -291,10 +311,9 @@ export class IndexedDbProvider extends StorageProvider {
         };
 
         t.oncomplete = () => resolve({ product: storedProduct, project: storedProject });
-        t.onerror = (e) => reject(new Error(`Error al actualizar: ${e.target.error?.message || 'desconocido'}`));
+        t.onerror = (e) => reject(_writeError('Error al actualizar', e, t));
         t.onabort = (e) => {
-          const errMsg = e.target.error?.message || 'desconocido';
-          reject(new Error(`Actualización abortada: ${errMsg}`));
+          reject(_writeError('Actualización abortada', e, t));
         };
       } catch (err) { reject(err); }
     });
@@ -323,8 +342,8 @@ export class IndexedDbProvider extends StorageProvider {
         t.objectStore('products').add(newProduct);
 
         t.oncomplete = () => resolve({ product: newProduct, project: updatedProject });
-        t.onerror = (e) => reject(new Error(`Error al duplicar: ${e.target.error?.message || 'desconocido'}`));
-        t.onabort = (e) => reject(new Error(`Duplicación abortada: ${e.target.error?.message || 'desconocido'}`));
+        t.onerror = (e) => reject(_writeError('Error al duplicar', e, t));
+        t.onabort = (e) => reject(_writeError('Duplicación abortada', e, t));
       } catch (err) { reject(err); }
     });
   }
@@ -454,6 +473,10 @@ export class IndexedDbProvider extends StorageProvider {
         t.oncomplete = () => resolve(project);
         t.onerror = (e) => {
           const err = e.target.error;
+          if (_isQuotaExceeded(err || t.error)) {
+            reject(_quotaWriteError());
+            return;
+          }
           let msg = `Error al importar proyecto: ${err?.message || 'desconocido'}`;
           if (err && err.name === 'ConstraintError') {
             const storeName = err.target?.source?.name || '?';
@@ -466,7 +489,7 @@ export class IndexedDbProvider extends StorageProvider {
           }
           reject(new Error(msg));
         };
-        t.onabort = (e) => reject(new Error(`Importación abortada: ${e.target.error?.message || 'desconocido'}`));
+        t.onabort = (e) => reject(_writeError('Importación abortada', e, t));
       } catch (err) { reject(err); }
     });
   }
@@ -512,8 +535,8 @@ export class IndexedDbProvider extends StorageProvider {
         };
 
         t.oncomplete = () => resolve({ deletedImageId: capturedImageId });
-        t.onerror = (e) => reject(new Error(`Error al eliminar: ${e.target.error?.message || 'desconocido'}`));
-        t.onabort = (e) => reject(new Error(`Eliminación abortada: ${e.target.error?.message || 'desconocido'}`));
+        t.onerror = (e) => reject(_writeError('Error al eliminar', e, t));
+        t.onabort = (e) => reject(_writeError('Eliminación abortada', e, t));
       } catch (err) { reject(err); }
     });
   }
@@ -526,6 +549,28 @@ function _bumpProject(project) {
   project.updatedAt = getTimestamp();
   project.syncMetadata.status = 'pending';
   project.syncMetadata.lastLocalUpdate = getTimestamp();
+  project.syncMetadata.errorMessage = null;
+}
+
+function _writeError(prefix, event, transaction) {
+  const original = event?.target?.error || transaction?.error || null;
+  if (_isQuotaExceeded(original)) return _quotaWriteError();
+  return new Error(`${prefix}: ${original?.message || 'desconocido'}`);
+}
+
+function _isQuotaExceeded(error) {
+  return error?.name === 'QuotaExceededError'
+    || error?.code === 22
+    || /quota/i.test(error?.message || '');
+}
+
+function _quotaWriteError() {
+  const error = new Error(
+    'No hay espacio local suficiente para guardar esta imagen. La operación fue cancelada sin modificar los datos existentes.'
+  );
+  error.name = 'QuotaExceededError';
+  error.code = 'STORAGE_QUOTA_EXCEEDED';
+  return error;
 }
 
 function _staleError(code, message) {

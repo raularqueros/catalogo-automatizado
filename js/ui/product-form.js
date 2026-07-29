@@ -203,12 +203,20 @@ export class ProductForm {
           editingProductId: this._editingProductId,
           expectedRevision: this._expectedRevision,
           imageAction: this._imageAction,
-          imageFile: this._selectedImageFile
+          imageFile: this._selectedImageFile,
+          onProgress: (message) => this._setSavingMessage(message)
         });
         success = true;
       }
     } catch (err) {
       console.error('Error al guardar (gestionado por app.js):', err);
+      if (
+        err?.name === 'QuotaExceededError'
+        || err?.code === 'STORAGE_QUOTA_EXCEEDED'
+        || (err?.code && err.code.startsWith('IMAGE_'))
+      ) {
+        this._showFieldError(this._elements.imageError, err.message);
+      }
     } finally {
       this._isSaving = false;
       this._setSavingState(false);
@@ -220,12 +228,20 @@ export class ProductForm {
   }
 
   _setSavingState(saving) {
-    this._elements.submitBtn.disabled = saving;
-    this._elements.cancelBtn.disabled = saving;
+    for (const control of this._elements.form.elements) {
+      control.disabled = saving;
+    }
     this._elements.form.setAttribute('aria-busy', saving ? 'true' : 'false');
     const baseText = this._editingProduct ? 'Guardar cambios' : 'Guardar producto';
-    this._elements.submitBtn.textContent = saving ? 'Guardando\u2026' : baseText;
-    this._elements.submitBtn.setAttribute('aria-label', saving ? 'Guardando, espere' : baseText);
+    const savingText = this._imageAction === 'replace' ? 'Procesando imagen\u2026' : 'Guardando\u2026';
+    this._elements.submitBtn.textContent = saving ? savingText : baseText;
+    this._elements.submitBtn.setAttribute('aria-label', saving ? `${savingText} Espere` : baseText);
+  }
+
+  _setSavingMessage(message) {
+    if (!this._isSaving || !message) return;
+    this._elements.submitBtn.textContent = message;
+    this._elements.submitBtn.setAttribute('aria-label', `${message} Espere`);
   }
 
   _validateForm(data) {
