@@ -1,5 +1,5 @@
-import { formatPrice } from '../utils.js';
-import CONFIG from '../config.js';
+import { formatPrice } from '../utils.js?v=20260729-final-integration-v1';
+import CONFIG from '../config.js?v=20260729-final-integration-v1';
 
 const PRODUCTS_PER_PAGE = 16;
 

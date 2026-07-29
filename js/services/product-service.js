@@ -1,5 +1,5 @@
-import { createProduct, cloneProductData } from '../models/product-schema.js';
-import { getTimestamp, generateId } from '../utils.js';
+import { createProduct, cloneProductData } from '../models/product-schema.js?v=20260729-final-integration-v1';
+import { getTimestamp, generateId } from '../utils.js?v=20260729-final-integration-v1';
 
 export class ProductService {
   constructor(storageProvider) {

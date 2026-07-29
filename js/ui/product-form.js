@@ -1,4 +1,4 @@
-import { validateImage } from '../services/image-service.js';
+import { validateImage } from '../services/image-service.js?v=20260729-final-integration-v1';
 
 export class ProductForm {
   constructor(productService) {

@@ -1,4 +1,4 @@
-import CONFIG from '../config.js';
+import CONFIG from '../config.js?v=20260729-final-integration-v1';
 
 const SCRIPT_ID = 'gis-client';
 const GIS_URL = 'https://accounts.google.com/gsi/client';

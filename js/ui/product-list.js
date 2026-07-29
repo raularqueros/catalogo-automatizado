@@ -1,4 +1,4 @@
-import { formatPrice, truncateText, escapeHtml } from '../utils.js';
+import { formatPrice, truncateText, escapeHtml } from '../utils.js?v=20260729-final-integration-v1';
 
 export class ProductList {
   constructor(containerId = 'product-list') {

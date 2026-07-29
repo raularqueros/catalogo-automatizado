@@ -1,22 +1,22 @@
-import { IndexedDbProvider } from './js/storage/indexeddb-provider.js';
-import { SyncManager } from './js/storage/sync-manager.js';
-import { DriveRemoteProvider } from './js/storage/drive-remote-provider.js';
-import { GoogleAuthService } from './js/auth/google-auth-service.js';
-import { ProductService } from './js/services/product-service.js';
-import { NotificationService } from './js/services/notification-service.js';
-import { ProductForm } from './js/ui/product-form.js';
-import { ProductList } from './js/ui/product-list.js';
-import { StorageStatus } from './js/ui/storage-status.js';
-import { createProject } from './js/models/project-schema.js';
+import { IndexedDbProvider } from './js/storage/indexeddb-provider.js?v=20260729-final-integration-v1';
+import { SyncManager } from './js/storage/sync-manager.js?v=20260729-final-integration-v1';
+import { DriveRemoteProvider } from './js/storage/drive-remote-provider.js?v=20260729-final-integration-v1';
+import { GoogleAuthService } from './js/auth/google-auth-service.js?v=20260729-final-integration-v1';
+import { ProductService } from './js/services/product-service.js?v=20260729-final-integration-v1';
+import { NotificationService } from './js/services/notification-service.js?v=20260729-final-integration-v1';
+import { ProductForm } from './js/ui/product-form.js?v=20260729-final-integration-v1';
+import { ProductList } from './js/ui/product-list.js?v=20260729-final-integration-v1';
+import { StorageStatus } from './js/ui/storage-status.js?v=20260729-final-integration-v1';
+import { createProject } from './js/models/project-schema.js?v=20260729-final-integration-v1';
 import {
   validateImage,
   optimizeImage,
-  ensureImageStorageCapacity,
-  createImageRecord
-} from './js/services/image-service.js?v=20260729-image-storage-safety-v1';
-import { escapeHtml } from './js/utils.js';
-import { CatalogBuilder } from './js/catalog/catalog-builder.js';
-import { PrintManager } from './js/catalog/print-manager.js';
+  createImageRecord,
+  ensureImageStorageCapacity
+} from './js/services/image-service.js?v=20260729-final-integration-v1';
+import { escapeHtml } from './js/utils.js?v=20260729-final-integration-v1';
+import { CatalogBuilder } from './js/catalog/catalog-builder.js?v=20260729-final-integration-v1';
+import { PrintManager } from './js/catalog/print-manager.js?v=20260729-final-integration-v1';
 
 class App {
   constructor() {

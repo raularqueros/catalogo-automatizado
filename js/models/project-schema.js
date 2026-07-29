@@ -1,5 +1,5 @@
-import { generateId, getTimestamp, getDeviceId } from '../utils.js';
-import CONFIG from '../config.js';
+import { generateId, getTimestamp, getDeviceId } from '../utils.js?v=20260729-final-integration-v1';
+import CONFIG from '../config.js?v=20260729-final-integration-v1';
 
 export function createProject(name = CONFIG.DEFAULT_PROJECT_NAME) {
   const now = getTimestamp();

@@ -1,5 +1,5 @@
-import { getTimestamp } from '../utils.js';
-import CONFIG from '../config.js';
+import { getTimestamp } from '../utils.js?v=20260729-final-integration-v1';
+import CONFIG from '../config.js?v=20260729-final-integration-v1';
 
 /**
  * SyncManager — Coordina IndexedDB (local) con RemoteStorageProvider (Drive).
