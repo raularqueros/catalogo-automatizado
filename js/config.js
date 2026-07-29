@@ -6,9 +6,13 @@ const CONFIG = Object.freeze({
   DEFAULT_PROJECT_NAME: 'Mi primer cat\u00e1logo',
   DEFAULT_CURRENCY: 'CLP',
   DEFAULT_LOCALE: 'es-CL',
-  MAX_SOURCE_IMAGE_SIZE: 15 * 1024 * 1024,
+  MAX_SOURCE_IMAGE_SIZE: 25 * 1024 * 1024,
   MAX_IMAGE_DIMENSION: 1600,
   IMAGE_QUALITY: 0.82,
+  MIN_IMAGE_QUALITY: 0.68,
+  IMAGE_TARGET_SIZE: Math.round(1.2 * 1024 * 1024),
+  IMAGE_QUALITY_STEP: 0.05,
+  MAX_IMAGE_DIMENSION_REDUCTIONS: 4,
   FUTURE_DRIVE_ROOT_FOLDER: 'Cat\u00e1logo Automatizado',
 
   // Google Drive (configurar en Google Cloud Console)

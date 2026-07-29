@@ -8,7 +8,12 @@ import { ProductForm } from './js/ui/product-form.js';
 import { ProductList } from './js/ui/product-list.js';
 import { StorageStatus } from './js/ui/storage-status.js';
 import { createProject } from './js/models/project-schema.js';
-import { validateImage, optimizeImage, createImageRecord } from './js/services/image-service.js';
+import {
+  validateImage,
+  optimizeImage,
+  ensureImageStorageCapacity,
+  createImageRecord
+} from './js/services/image-service.js?v=20260729-image-storage-safety-v1';
 import { escapeHtml } from './js/utils.js';
 import { CatalogBuilder } from './js/catalog/catalog-builder.js';
 import { PrintManager } from './js/catalog/print-manager.js';
@@ -947,7 +952,7 @@ class App {
 
   // ─── Product save ───
 
-  async _handleSave({ data, editingProductId, expectedRevision, imageAction, imageFile }) {
+  async _handleSave({ data, editingProductId, expectedRevision, imageAction, imageFile, onProgress }) {
     this._status.showSaving();
     try {
       if (data.categoryId) {
@@ -957,13 +962,27 @@ class App {
 
       let imageRecord = null;
       if (imageAction === 'replace') {
-        if (!imageFile) throw new Error('IMAGE_FILE_MISSING');
+        if (typeof onProgress === 'function') onProgress('Optimizando imagen\u2026');
+        if (!imageFile) {
+          const missingError = new Error('Selecciona una imagen antes de guardar.');
+          missingError.name = 'ImageProcessingError';
+          missingError.code = 'IMAGE_FILE_MISSING';
+          throw missingError;
+        }
         const validation = validateImage(imageFile);
-        if (!validation.valid) throw new Error(validation.error);
+        if (!validation.valid) {
+          const validationError = new Error(validation.error);
+          validationError.name = 'ImageProcessingError';
+          validationError.code = validation.code;
+          throw validationError;
+        }
         const optimized = await optimizeImage(imageFile);
+        if (typeof onProgress === 'function') onProgress('Verificando espacio\u2026');
+        await ensureImageStorageCapacity(optimized.blob.size);
         imageRecord = createImageRecord(this._project.projectId, optimized.blob, optimized.mimeType, optimized.width, optimized.height, optimized.optimizedSize);
       }
 
+      if (typeof onProgress === 'function') onProgress('Guardando producto\u2026');
       if (editingProductId && expectedRevision !== null) {
         await this._productService.updateProduct(editingProductId, expectedRevision, this._project.projectId, data, imageAction, imageRecord);
         this._notifications.success('Producto actualizado.');
@@ -976,6 +995,9 @@ class App {
       console.error('Error al guardar:', err);
       if (err.name === 'ConflictError') this._notifications.error('Este producto cambi\u00f3...');
       else if (err.code === 'PRODUCT_NOT_FOUND') this._notifications.error('Este producto ya no existe.');
+      else if (err.name === 'QuotaExceededError' || err.code === 'STORAGE_QUOTA_EXCEEDED') {
+        this._notifications.error('No hay espacio local suficiente. La imagen y el producto anterior se conservaron sin cambios.');
+      }
       else this._notifications.error(`Error: ${err.message}`);
       try { await this._updateProjectAndStatus(); } catch (_) { this._status.update(this._project, this._drive.isConnected()); }
       throw err;
