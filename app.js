@@ -132,7 +132,12 @@ class App {
   async _loadOrCreateProject() {
     const projects = await this._storage.listProjects();
     if (projects && projects.length > 0) {
+      const activeId = await this._storage.getMetadata('activeProjectId');
       this._project = projects[0];
+      if (activeId) {
+        const activeProject = projects.find(p => p.projectId === activeId);
+        if (activeProject) this._project = activeProject;
+      }
       document.getElementById('project-name').textContent = this._project.name;
       await this._productService.migrateCategories(this._project);
       this._form.refreshCategories(this._project);
@@ -399,6 +404,7 @@ class App {
 
   async _handleOpenFromDrive() {
     if (!this._drive.isConnected()) { this._notifications.error('Conecta Google Drive primero.'); return; }
+    if (this._isDriveSyncing) { this._notifications.info('Ya hay una operaci\u00f3n en curso.'); return; }
     const dialog = document.getElementById('drive-open-dialog');
     const listEl = document.getElementById('drive-projects-list');
     const loadingEl = document.getElementById('drive-projects-loading');

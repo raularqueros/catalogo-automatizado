@@ -158,10 +158,11 @@ export class IndexedDbProvider extends StorageProvider {
         const db = await this._getDb();
         const t = db.transaction(storeName, 'readonly');
         const result = cb(t.objectStore(storeName));
-        // result puede ser un Promise (wrapped con _req) o un IDBRequest directo
         const promise = (result instanceof Promise) ? result : this._req(result);
-        promise.then(r => { t.oncomplete = () => resolve(r); }).catch(reject);
-        t.onerror = (e) => reject(new Error(`Error en lectura: ${e.target.error?.message || 'desconocido'}`));
+        let settled = false;
+        promise.then(r => { if (!settled) { settled = true; resolve(r); } })
+               .catch(e => { if (!settled) { settled = true; reject(e); } });
+        t.onerror = (e) => { if (!settled) { settled = true; reject(new Error(`Error en lectura: ${e.target.error?.message || 'desconocido'}`)); } };
       } catch (err) { reject(err); }
     });
   }
