@@ -55,6 +55,12 @@ export class SyncManager {
     };
   }
 
+  async hasPendingChanges(projectId) {
+    const project = await this._storage.getProject(projectId);
+    if (!project) return false;
+    return project.syncMetadata.status === 'pending' || project.syncMetadata.status === 'error';
+  }
+
   getProviderLabel() {
     return this._remoteProvider && this._remoteProvider.isConnected()
       ? 'Google Drive conectado'
@@ -205,7 +211,7 @@ export class SyncManager {
     const conflict = await this._evaluateLocalConflict(manifest.project);
 
     if (conflict.action === 'skip') {
-      throw { conflict: 'skip', message: 'Este proyecto ya está actualizado con la versión de Drive.' };
+      return { project: conflict.localProject, totalProducts: 0, totalImages: 0, skipped: true };
     }
 
     if (conflict.action === 'warn_pending' || conflict.action === 'warn_revert') {
@@ -396,7 +402,11 @@ export class SyncManager {
 
     // 4. Subir catalogo.json
     onProgress('Subiendo catálogo...');
-    const manifestResult = await this._remoteProvider.uploadManifest(snapshot, folders.projectFolderId);
+    const manifestResult = await this._remoteProvider.uploadManifest(
+      snapshot,
+      folders.projectFolderId,
+      project.syncMetadata.cloudManifestFileId || null
+    );
 
     // 5. Confirmar sync en IndexedDB
     onProgress('Confirmando sincronización local...');
