@@ -91,6 +91,14 @@ img {
   height: auto;
 }
 
+.svg-definitions {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .hidden {
   display: none !important;
 }
@@ -109,6 +117,257 @@ img {
 
 .skip-link:focus {
   top: var(--spacing-sm);
+}
+
+/* Startup project choice */
+
+.startup-screen {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100svh;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(79, 93, 255, 0.28), transparent 32rem),
+    radial-gradient(circle at 88% 90%, rgba(124, 134, 255, 0.15), transparent 34rem),
+    var(--color-dark);
+  color: #fff;
+}
+
+.startup-screen::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  content: "";
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 78%);
+  pointer-events: none;
+}
+
+.startup-screen__panel {
+  position: relative;
+  z-index: 1;
+  width: min(960px, 100%);
+  padding: clamp(1.25rem, 3.5vw, 2.75rem);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  background: rgba(23, 27, 44, 0.86);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(16px);
+}
+
+.startup-screen__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.startup-screen__brand-mark {
+  flex: 0 0 auto;
+}
+
+.startup-screen__intro {
+  max-width: 680px;
+  margin-top: clamp(1.75rem, 4vw, 3rem);
+}
+
+.startup-screen__eyebrow {
+  margin-bottom: 0.5rem;
+  color: #aeb4ff;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.startup-screen__intro h1 {
+  max-width: 14ch;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1.03;
+}
+
+.startup-screen__intro > p:last-child {
+  max-width: 620px;
+  margin-top: 1rem;
+  color: #c5c9d8;
+  font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
+  line-height: 1.65;
+}
+
+.startup-screen__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.startup-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 142px;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.055);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.startup-choice:hover:not(:disabled) {
+  border-color: rgba(174, 180, 255, 0.62);
+  background: rgba(255, 255, 255, 0.085);
+  transform: translateY(-2px);
+}
+
+.startup-choice--primary {
+  border-color: rgba(124, 134, 255, 0.55);
+  background: linear-gradient(145deg, rgba(79, 93, 255, 0.28), rgba(79, 93, 255, 0.1));
+}
+
+.startup-choice:focus-visible,
+.startup-create-form__back:focus-visible {
+  outline: 2px solid #aeb4ff;
+  outline-offset: 3px;
+}
+
+.startup-choice:disabled {
+  opacity: 0.52;
+  cursor: wait;
+}
+
+.startup-choice__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.startup-choice__icon--drive {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.drive-logo {
+  flex: 0 0 auto;
+  width: 1.2rem;
+  height: 1.05rem;
+}
+
+.drive-logo--startup {
+  width: 26px;
+  height: 23px;
+}
+
+.startup-choice__content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-inline: 0.875rem;
+}
+
+.startup-choice__content strong {
+  font-size: var(--font-size-base);
+  line-height: 1.3;
+}
+
+.startup-choice__content > span {
+  margin-top: 0.375rem;
+  color: #b7bbcb;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.startup-choice__arrow {
+  color: #aeb4ff;
+  font-size: 1.35rem;
+}
+
+.startup-create-form {
+  width: min(560px, 100%);
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.startup-create-form__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.startup-create-form__heading h2 {
+  font-size: var(--font-size-xl);
+  line-height: 1.25;
+}
+
+.startup-create-form__heading p {
+  margin-top: 0.25rem;
+  color: #b7bbcb;
+  font-size: var(--font-size-sm);
+}
+
+.startup-create-form__back {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+}
+
+.startup-create-form .form-label {
+  color: #e7e8f2;
+}
+
+.startup-create-form .form-input {
+  min-height: 48px;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.startup-create-form .field-error {
+  color: #ffb3b3;
+}
+
+.startup-create-form .btn {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.startup-screen__status {
+  min-height: 1.5rem;
+  margin-top: var(--spacing-md);
+  color: #cdd0ff;
+  font-size: var(--font-size-sm);
+}
+
+.startup-screen__privacy {
+  margin-top: var(--spacing-sm);
+  color: #8f95aa;
+  font-size: var(--font-size-xs);
 }
 
 /* Header and navigation */
@@ -446,6 +705,12 @@ img {
   margin-bottom: 1.25rem;
 }
 
+.section-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .section-header__title {
   color: var(--color-dark);
   font-size: var(--font-size-2xl);
@@ -530,6 +795,109 @@ img {
   flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
+}
+
+.btn--with-drive {
+  gap: 0.5rem;
+}
+
+.drive-status-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--control-height);
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1;
+  transition: opacity var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.drive-status-btn:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-secondary);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.drive-status-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.drive-status-btn:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.drive-status-btn--disconnected {
+  opacity: 0.58;
+}
+
+.drive-status-btn--connected {
+  border-color: rgba(20, 128, 94, 0.28);
+  background: var(--color-success-soft);
+}
+
+.drive-status-btn--pending {
+  border-color: rgba(79, 93, 255, 0.34);
+  background: var(--color-primary-soft);
+  opacity: 1;
+}
+
+.drive-status-btn--error {
+  border-color: rgba(209, 67, 67, 0.34);
+  background: var(--color-danger-soft);
+  opacity: 1;
+}
+
+.drive-status-btn__badge {
+  position: absolute;
+  top: -6px;
+  right: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-bg);
+  border-radius: 50%;
+  background: var(--color-inactive);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.drive-status-btn--connected .drive-status-btn__badge {
+  background: var(--color-success);
+}
+
+.drive-status-btn--disconnected .drive-status-btn__badge {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.drive-status-btn--pending .drive-status-btn__badge {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.drive-status-btn--error .drive-status-btn__badge {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.drive-status-btn--loading .drive-status-btn__badge {
+  background: var(--color-primary);
+  font-size: 0.625rem;
 }
 
 /* Product toolbar */
@@ -1784,6 +2152,44 @@ img {
 /* Mobile refinements */
 
 @media (max-width: 767px) {
+  .startup-screen {
+    align-items: start;
+    padding: var(--spacing-md);
+  }
+
+  .startup-screen__panel {
+    margin-block: auto;
+    padding: 1.25rem;
+  }
+
+  .startup-screen__brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .startup-screen__intro {
+    margin-top: 1.75rem;
+  }
+
+  .startup-screen__intro h1 {
+    font-size: clamp(2rem, 10vw, 2.7rem);
+  }
+
+  .startup-screen__choices {
+    grid-template-columns: 1fr;
+    margin-top: 1.5rem;
+  }
+
+  .startup-choice {
+    min-height: 112px;
+    padding: 1rem;
+  }
+
+  .startup-choice__icon {
+    width: 44px;
+    height: 44px;
+  }
+
   .header {
     padding-inline: var(--spacing-md);
   }
@@ -1818,6 +2224,38 @@ img {
     flex-direction: column;
     gap: var(--spacing-xs);
     margin-bottom: var(--spacing-md);
+  }
+
+  .section-header--products {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--spacing-sm);
+  }
+
+  .section-header--products .section-header__actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .drive-status-btn {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .drive-status-btn__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .drive-status-btn .drive-logo {
+    width: 22px;
+    height: 19px;
   }
 
   .section-header__title {
@@ -1979,6 +2417,39 @@ img {
 }
 
 @media (max-width: 374px) {
+  .startup-screen {
+    padding: var(--spacing-3);
+  }
+
+  .startup-screen__panel {
+    padding: 1rem;
+  }
+
+  .startup-screen__intro {
+    margin-top: 1.35rem;
+  }
+
+  .startup-screen__intro h1 {
+    font-size: 2rem;
+  }
+
+  .startup-screen__intro > p:last-child {
+    font-size: var(--font-size-sm);
+  }
+
+  .startup-choice {
+    min-height: 104px;
+    padding: 0.875rem;
+  }
+
+  .startup-choice__content {
+    margin-inline: 0.75rem 0.5rem;
+  }
+
+  .startup-choice__content > span {
+    font-size: var(--font-size-xs);
+  }
+
   .header {
     padding-inline: var(--spacing-3);
   }

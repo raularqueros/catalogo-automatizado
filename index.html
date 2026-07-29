@@ -9,9 +9,84 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+  <svg class="svg-definitions" aria-hidden="true" focusable="false">
+    <symbol id="google-drive-mark" viewBox="0 0 87 75">
+      <path d="M30.6 0h25.5l30.6 53H61.2L30.6 0Z" fill="#2684FC"/>
+      <path d="M0 53 30.6 0l12.8 22.1L25.5 53H0Z" fill="#00AC47"/>
+      <path d="M25.5 53h61.2L74 75H12.8L25.5 53Z" fill="#FFBA00"/>
+    </symbol>
+  </svg>
+  <a href="#startup-title" class="skip-link" id="skip-link">Saltar a las opciones de inicio</a>
 
-  <header class="header">
+  <section id="startup-screen" class="startup-screen hidden" aria-labelledby="startup-title" aria-busy="false">
+    <div class="startup-screen__panel">
+      <div class="startup-screen__brand" aria-label="Catálogo Automatizado">
+        <svg class="startup-screen__brand-mark" width="44" height="44" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="startupBrandGrad" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#7C86FF"/>
+              <stop offset="1" stop-color="#4F5DFF"/>
+            </linearGradient>
+          </defs>
+          <rect x="7" y="2" width="20" height="20" rx="6" fill="#2A2F45"/>
+          <rect x="4" y="8" width="20" height="20" rx="6" fill="#3A3F5C"/>
+          <rect x="1" y="14" width="20" height="19" rx="6" fill="url(#startupBrandGrad)"/>
+          <path d="M8 23.5L10.5 26L15 21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Cat&aacute;logo Automatizado</span>
+      </div>
+
+      <div class="startup-screen__intro">
+        <p class="startup-screen__eyebrow">Tu cat&aacute;logo, a tu manera</p>
+        <h1 id="startup-title">¿C&oacute;mo quieres comenzar?</h1>
+        <p>Crea un cat&aacute;logo nuevo en este dispositivo o contin&uacute;a uno que ya tengas guardado en Google Drive.</p>
+      </div>
+
+      <div id="startup-choice-actions" class="startup-screen__choices">
+        <button id="startup-create-choice" class="startup-choice startup-choice--primary" type="button">
+          <span class="startup-choice__icon" aria-hidden="true">+</span>
+          <span class="startup-choice__content">
+            <strong>Crear cat&aacute;logo nuevo</strong>
+            <span>Empieza localmente y conecta Google Drive cuando quieras.</span>
+          </span>
+          <span class="startup-choice__arrow" aria-hidden="true">&rarr;</span>
+        </button>
+        <button id="startup-drive-choice" class="startup-choice" type="button">
+          <span class="startup-choice__icon startup-choice__icon--drive" aria-hidden="true">
+            <svg class="drive-logo drive-logo--startup" viewBox="0 0 87 75">
+              <use href="#google-drive-mark"></use>
+            </svg>
+          </span>
+          <span class="startup-choice__content">
+            <strong>Abrir desde Google Drive</strong>
+            <span>Contin&uacute;a un cat&aacute;logo guardado anteriormente con esta aplicaci&oacute;n.</span>
+          </span>
+          <span class="startup-choice__arrow" aria-hidden="true">&rarr;</span>
+        </button>
+      </div>
+
+      <form id="startup-create-form" class="startup-create-form hidden" novalidate>
+        <div class="startup-create-form__heading">
+          <button id="startup-create-back" class="startup-create-form__back" type="button" aria-label="Volver a las opciones de inicio">&larr;</button>
+          <div>
+            <h2>Nombre del cat&aacute;logo</h2>
+            <p>Podr&aacute;s empezar a agregar productos inmediatamente.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="startup-project-name">Nombre</label>
+          <input id="startup-project-name" class="form-input" type="text" value="Mi cat&aacute;logo" maxlength="120" autocomplete="off" required aria-describedby="startup-project-name-error">
+          <p id="startup-project-name-error" class="field-error" role="alert"></p>
+        </div>
+        <button id="startup-create-submit" class="btn btn--primary btn--lg" type="submit">Crear cat&aacute;logo</button>
+      </form>
+
+      <p id="startup-status" class="startup-screen__status" role="status" aria-live="polite"></p>
+      <p class="startup-screen__privacy">Tus datos permanecen en este dispositivo o en tu propio Google Drive.</p>
+    </div>
+  </section>
+
+  <header class="header hidden" id="app-header">
     <div class="header__inner">
       <div class="header__brand">
         <svg class="header__brand-mark" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
@@ -28,7 +103,7 @@
         </svg>
         <div class="header__brand-copy">
           <h1 class="header__title">Cat&aacute;logo Automatizado</h1>
-          <span class="header__project-name" id="project-name">Mi primer cat&aacute;logo</span>
+          <span class="header__project-name" id="project-name"></span>
         </div>
       </div>
       <nav class="header-nav" aria-label="Navegaci&oacute;n principal">
@@ -40,15 +115,24 @@
     </div>
   </header>
 
-  <main id="main-content" class="main-content">
+  <main id="main-content" class="main-content hidden">
     <!-- Sección: Productos -->
     <section id="section-products" class="app-section" aria-label="Productos">
-      <div class="section-header">
+      <div class="section-header section-header--products">
         <div>
           <h2 class="section-header__title">Productos</h2>
           <p class="section-header__subtitle">Administra los productos que formar&aacute;n parte de tus cat&aacute;logos</p>
         </div>
-        <button class="btn btn--primary" id="new-product-btn" type="button">Nuevo producto</button>
+        <div class="section-header__actions">
+          <button id="products-drive-btn" class="drive-status-btn drive-status-btn--disconnected" type="button" disabled aria-busy="false" aria-label="Drive desconectado. Sin cambios pendientes de respaldo" title="Drive desconectado. La conexión puede gestionarse desde Proyecto">
+            <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true">
+              <use href="#google-drive-mark"></use>
+            </svg>
+            <span class="drive-status-btn__label">Drive</span>
+            <span id="products-drive-badge" class="drive-status-btn__badge" aria-hidden="true">&times;</span>
+          </button>
+          <button class="btn btn--primary" id="new-product-btn" type="button">Nuevo producto</button>
+        </div>
       </div>
 
       <div class="list-toolbar">
@@ -162,10 +246,22 @@
         <p id="project-last-sync" class="info-card__note"></p>
       </div>
       <div class="project-actions">
-        <button class="btn btn--primary hidden" id="save-drive-btn" type="button">Guardar en Drive</button>
-        <button class="btn btn--outline hidden" id="open-drive-btn" type="button">Abrir desde Drive</button>
-        <button class="btn btn--outline" id="connect-drive-btn" type="button">Conectar Google Drive</button>
-        <button class="btn btn--outline hidden" id="disconnect-drive-btn" type="button">Desconectar Drive</button>
+        <button class="btn btn--primary btn--with-drive hidden" id="save-drive-btn" type="button">
+          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+          <span id="save-drive-label">Guardar en Drive</span>
+        </button>
+        <button class="btn btn--outline btn--with-drive hidden" id="open-drive-btn" type="button">
+          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+          <span>Abrir desde Drive</span>
+        </button>
+        <button class="btn btn--outline btn--with-drive" id="connect-drive-btn" type="button">
+          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+          <span id="connect-drive-label">Conectar Google Drive</span>
+        </button>
+        <button class="btn btn--outline btn--with-drive hidden" id="disconnect-drive-btn" type="button">
+          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+          <span>Desconectar Drive</span>
+        </button>
       </div>
     </section>
   </main>

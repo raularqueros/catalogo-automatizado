@@ -136,6 +136,7 @@ export class ProductService {
     project.updatedAt = now;
     project.syncMetadata.status = 'pending';
     project.syncMetadata.lastLocalUpdate = now;
+    project.syncMetadata.errorMessage = null;
     await this._storage.updateProject(project);
     return cat;
   }
@@ -157,6 +158,7 @@ export class ProductService {
     project.updatedAt = now;
     project.syncMetadata.status = 'pending';
     project.syncMetadata.lastLocalUpdate = now;
+    project.syncMetadata.errorMessage = null;
     await this._storage.updateProject(project);
     return cat;
   }
@@ -173,6 +175,7 @@ export class ProductService {
     project.updatedAt = now;
     project.syncMetadata.status = 'pending';
     project.syncMetadata.lastLocalUpdate = now;
+    project.syncMetadata.errorMessage = null;
 
     await this._storage.updateProject(project);
 

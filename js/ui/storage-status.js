@@ -3,7 +3,7 @@ export class StorageStatus {
     this._element = document.getElementById(elementId);
   }
 
-  async update(project) {
+  async update(project, driveConnected = false) {
     if (!this._element || !project) return;
 
     const sync = project.syncMetadata;
@@ -16,14 +16,15 @@ export class StorageStatus {
       fullParts.push('Guardando\u2026');
       className = 'storage-status--syncing';
     } else if (sync.status === 'error') {
-      shortText = 'Error';
-      fullParts.push('Error al guardar');
+      shortText = 'Respaldo pendiente';
+      fullParts.push('Cambios guardados en este dispositivo');
+      fullParts.push('No se pudo completar el respaldo en Google Drive');
       className = 'storage-status--error';
     } else {
       fullParts.push('Guardado localmente');
       if (sync.status === 'pending') {
-        shortText = 'Cambios pendientes';
-        fullParts.push('Cambios pendientes');
+        shortText = 'Respaldo pendiente';
+        fullParts.push('Falta respaldar los cambios en Google Drive');
         className = 'storage-status--pending';
       } else {
         shortText = 'Guardado local';
@@ -37,13 +38,13 @@ export class StorageStatus {
       className = 'storage-status--synced';
       this._element.textContent = shortText;
       this._element.title = fullParts.join(' \u00b7 ') + (lastSync ? `\n\u00daltima sincronizaci\u00f3n: ${lastSync}` : '');
-    } else if (sync.cloudProvider === 'google-drive' && sync.status === 'pending') {
-      shortText = 'Drive pendiente';
-      fullParts.push('Google Drive: cambios pendientes');
+    } else if (sync.status === 'pending' || sync.status === 'error') {
+      shortText = 'Respaldo pendiente';
+      fullParts.push(driveConnected ? 'Google Drive conectado' : 'Google Drive desconectado');
       this._element.textContent = shortText;
       this._element.title = fullParts.join(' \u00b7 ');
     } else if (!sync.cloudProvider || sync.cloudProvider !== 'google-drive') {
-      fullParts.push('Google Drive a\u00fan no conectado');
+      fullParts.push(driveConnected ? 'Google Drive conectado' : 'Google Drive a\u00fan no conectado');
       this._element.textContent = shortText;
       this._element.title = fullParts.join(' \u00b7 ');
     } else {

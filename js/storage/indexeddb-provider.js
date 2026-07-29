@@ -77,6 +77,26 @@ export class IndexedDbProvider extends StorageProvider {
     return this._writeOne('projects', (store) => { store.add(project); return project; });
   }
 
+  async createProjectAndSetActive(project) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const db = await this._getDb();
+        const transaction = db.transaction(['projects', 'metadata'], 'readwrite');
+        transaction.objectStore('projects').add(project);
+        transaction.objectStore('metadata').put({ key: 'activeProjectId', value: project.projectId });
+        transaction.oncomplete = () => resolve(project);
+        transaction.onerror = event => reject(new Error(
+          `Error al crear el proyecto: ${event.target.error?.message || 'desconocido'}`
+        ));
+        transaction.onabort = event => reject(new Error(
+          `Creaci\u00f3n de proyecto abortada: ${event.target.error?.message || 'desconocido'}`
+        ));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
   async getProject(projectId) {
     return this._readOne('projects', (store) => store.get(projectId));
   }
@@ -526,6 +546,7 @@ function _bumpProject(project) {
   project.updatedAt = getTimestamp();
   project.syncMetadata.status = 'pending';
   project.syncMetadata.lastLocalUpdate = getTimestamp();
+  project.syncMetadata.errorMessage = null;
 }
 
 function _staleError(code, message) {
