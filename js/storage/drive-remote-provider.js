@@ -7,7 +7,6 @@ export class DriveRemoteProvider {
     this._rootFolderId = null;
     this._projectFolderId = null;
     this._imagesFolderId = null;
-    this._manifestFileId = null;
   }
 
   setAccessToken(token) {
@@ -19,7 +18,6 @@ export class DriveRemoteProvider {
     this._rootFolderId = null;
     this._projectFolderId = null;
     this._imagesFolderId = null;
-    this._manifestFileId = null;
   }
 
   isConnected() {
@@ -178,7 +176,7 @@ export class DriveRemoteProvider {
   /**
    * Sube o actualiza catalogo.json.
    */
-  async uploadManifest(snapshot, projectFolderId) {
+  async uploadManifest(snapshot, projectFolderId, knownFileId) {
     const json = JSON.stringify(snapshot, null, 2);
     const blob = new Blob([json], { type: 'application/json; charset=UTF-8' });
 
@@ -188,12 +186,18 @@ export class DriveRemoteProvider {
       projectId: snapshot.project.projectId
     };
 
-    let fileId = this._manifestFileId || null;
+    let fileId = knownFileId || null;
+
     if (!fileId) {
-      const existing = await this._findOne(
-        `trashed=false and appProperties has { key='catalogApp' and value='catalogo-automatizado' } and appProperties has { key='catalogType' and value='manifest' } and appProperties has { key='projectId' and value='${this._esc(snapshot.project.projectId)}' }`,
-        'id'
-      );
+      const queryParts = [
+        `trashed=false`,
+        `appProperties has { key='catalogApp' and value='catalogo-automatizado' }`,
+        `appProperties has { key='catalogType' and value='manifest' }`,
+        `appProperties has { key='projectId' and value='${this._esc(snapshot.project.projectId)}' }`
+      ];
+      if (projectFolderId) queryParts.push(`'${projectFolderId}' in parents`);
+
+      const existing = await this._findOne(queryParts.join(' and '), 'id');
       if (existing) fileId = existing.id;
     }
 
@@ -218,7 +222,6 @@ export class DriveRemoteProvider {
       body
     });
     const result = await resp.json();
-    this._manifestFileId = result.id;
     return { fileId: result.id, updated: !!fileId };
   }
 
@@ -259,8 +262,7 @@ export class DriveRemoteProvider {
     return {
       rootFolderId: this._rootFolderId,
       projectFolderId: this._projectFolderId,
-      imagesFolderId: this._imagesFolderId,
-      manifestFileId: this._manifestFileId
+      imagesFolderId: this._imagesFolderId
     };
   }
 

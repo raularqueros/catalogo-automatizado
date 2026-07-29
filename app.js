@@ -353,6 +353,28 @@ class App {
     this._restoreDriveConnection();
   }
 
+  async activateProject(projectId) {
+    const project = await this._storage.getProject(projectId);
+    if (!project) throw new Error('El proyecto no existe en el almacenamiento local.');
+    this._project = project;
+    await this._storage.setMetadata('activeProjectId', projectId);
+    if (!this._appReady) {
+      await this._enterApplication();
+      return;
+    }
+    document.getElementById('project-name').textContent = project.name;
+    await this._refreshProducts();
+    await this._updateProjectAndStatus();
+  }
+
+  async _checkPendingBeforeSwitch(targetProjectId) {
+    if (!this._project || this._project.projectId === targetProjectId) return true;
+    const hasPending = await this._sync.hasPendingChanges(this._project.projectId);
+    if (!hasPending) return true;
+    const currentName = this._project.name || 'este proyecto';
+    return confirm(`"${currentName}" tiene cambios locales sin respaldar en Drive.\n\n¿Deseas cambiar de proyecto? Los cambios locales NO se eliminarán, pero conviene respaldarlos antes.`);
+  }
+
   _setupUI() {
     if (this._uiInitialized) return;
     this._uiInitialized = true;
@@ -859,10 +881,13 @@ class App {
   }
 
   async _handleImportFromDrive(remoteProject) {
-    this._status.showDriveProgress('Abriendo proyecto desde Drive...');
-    if (!this._appReady) document.getElementById('startup-status').textContent = 'Abriendo proyecto desde Drive\u2026';
     this._isDriveSyncing = true;
     try {
+      const canSwitch = await this._checkPendingBeforeSwitch(remoteProject.projectId);
+      if (!canSwitch) { this._notifications.info('Apertura cancelada. El proyecto actual permanece activo.'); return false; }
+
+      this._status.showDriveProgress('Abriendo proyecto desde Drive...');
+      if (!this._appReady) document.getElementById('startup-status').textContent = 'Abriendo proyecto desde Drive\u2026';
       const result = await this._sync.openProjectFromDrive(remoteProject,
         (msg) => {
           this._status.showDriveProgress(msg);
@@ -880,19 +905,16 @@ class App {
           resolve(confirm(question) ? 'replace' : 'cancel');
         })
       );
-      this._project = await this._storage.getProject(remoteProject.projectId);
-      if (!this._appReady) {
-        await this._enterApplication();
-      } else {
-        document.getElementById('project-name').textContent = this._project.name;
-        await this._refreshProducts();
-        await this._updateProjectAndStatus();
+      if (result.skipped) {
+        await this.activateProject(remoteProject.projectId);
+        this._notifications.info(`Proyecto "${result.project.name}" ya estaba actualizado.`);
+        return true;
       }
+      await this.activateProject(remoteProject.projectId);
       this._notifications.success(`Proyecto "${result.project.name}" abierto desde Google Drive (${result.totalProducts} productos, ${result.totalImages} im\u00e1genes).`);
       return true;
     } catch (err) {
-      if (err.conflict === 'skip') { this._notifications.info(err.message); }
-      else if (err.conflict === 'cancelled' || err.conflict === 'pending') { this._notifications.info(err.message || 'Apertura cancelada.'); }
+      if (err.conflict === 'cancelled' || err.conflict === 'pending') { this._notifications.info(err.message || 'Apertura cancelada.'); }
       else {
         console.error('Error al abrir desde Drive:', err);
         if (err.code === 'DRIVE_SESSION_EXPIRED') { this._auth.disconnect(); this._drive.clearAccessToken(); this._updateUIForDriveState(); this._notifications.error('La sesi\u00f3n de Google Drive expir\u00f3.'); }
@@ -905,6 +927,7 @@ class App {
       return false;
     } finally {
       this._isDriveSyncing = false;
+      this._updateUIForDriveState();
     }
   }
 
