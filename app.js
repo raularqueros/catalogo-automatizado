@@ -14,7 +14,7 @@ import {
   createImageRecord,
   ensureImageStorageCapacity
 } from './js/services/image-service.js?v=20260729-final-integration-v1';
-import { escapeHtml } from './js/utils.js?v=20260729-final-integration-v1';
+import { escapeHtml, getTimestamp } from './js/utils.js?v=20260729-final-integration-v1';
 import { CatalogBuilder } from './js/catalog/catalog-builder.js?v=20260729-final-integration-v1';
 import { PrintManager } from './js/catalog/print-manager.js?v=20260729-final-integration-v1';
 
@@ -375,6 +375,213 @@ class App {
     return confirm(`"${currentName}" tiene cambios locales sin respaldar en Drive.\n\n¿Deseas cambiar de proyecto? Los cambios locales NO se eliminarán, pero conviene respaldarlos antes.`);
   }
 
+  _formatSyncStatus(project) {
+    const s = project.syncMetadata.status;
+    if (s === 'synced') return { label: 'Respaldado en Drive', css: 'synced' };
+    if (s === 'pending') return { label: 'Cambios pendientes', css: 'pending' };
+    if (s === 'error') return { label: 'Error de respaldo', css: 'error' };
+    return { label: 'Solo local', css: 'local' };
+  }
+
+  async _renderProjectsList(listEl) {
+    const projects = await this._storage.listProjects();
+    const valid = (projects || []).filter(p => p && typeof p.projectId === 'string' && p.projectId.trim());
+    valid.sort((a, b) => {
+      if (a.projectId === (this._project && this._project.projectId)) return -1;
+      if (b.projectId === (this._project && this._project.projectId)) return 1;
+      const da = a.updatedAt || a.createdAt || '';
+      const db2 = b.updatedAt || b.createdAt || '';
+      return db2.localeCompare(da);
+    });
+    listEl.innerHTML = '';
+    if (valid.length === 0) {
+      listEl.innerHTML = '<li class="drive-projects-empty">Aún no hay proyectos locales.</li>';
+      return;
+    }
+    const activeId = this._project && this._project.projectId;
+    for (const p of valid) {
+      const status = this._formatSyncStatus(p);
+      const isActive = p.projectId === activeId;
+      let dateStr = '';
+      try { if (p.updatedAt) dateStr = new Date(p.updatedAt).toLocaleDateString(); } catch (_) {}
+      const activeLabel = isActive ? '<span class="projects-list__item-active-label">Activo</span>' : '';
+      const li = document.createElement('li');
+      li.className = 'projects-list__item' + (isActive ? ' projects-list__item--active' : '');
+      li.innerHTML = `<span class="projects-list__item-name">${escapeHtml(p.name)}</span>
+        <span class="projects-list__item-meta">
+          <span class="projects-list__item-status projects-list__item-status--${status.css}">${status.label}</span>
+          ${activeLabel}
+          <span>${escapeHtml(dateStr)}</span>
+        </span>
+        <span class="projects-list__item-actions">
+          ${!isActive ? `<button class="btn btn--small btn--outline projects-open-btn" data-id="${p.projectId}" type="button">Abrir</button>` : ''}
+          <button class="btn btn--small btn--outline projects-rename-btn" data-id="${p.projectId}" type="button">Renombrar</button>
+          <button class="btn btn--small btn--danger projects-delete-btn" data-id="${p.projectId}" type="button">Eliminar</button>
+        </span>`;
+      listEl.appendChild(li);
+    }
+  }
+
+  async _handleManageProjects() {
+    if (this._projectBulkLock) return;
+    this._projectBulkLock = true;
+    const dialog = document.getElementById('projects-dialog');
+    const listEl = document.getElementById('projects-list');
+    const newBtn = document.getElementById('new-project-btn');
+    const closeBtn = document.getElementById('projects-close-btn');
+    const previousFocus = document.activeElement;
+    if (this._projectsDialogAbort) this._projectsDialogAbort.abort();
+    this._projectsDialogAbort = new AbortController();
+    const { signal } = this._projectsDialogAbort;
+
+    const closeDialog = () => {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+      this._projectsDialogAbort.abort();
+      this._projectsDialogAbort = null;
+      this._projectBulkLock = false;
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+    };
+
+    const refreshList = () => this._renderProjectsList(listEl);
+
+    const attachHandlers = () => {
+      listEl.querySelectorAll('.projects-open-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await this._handleSwitchProject(btn.dataset.id);
+          await refreshList();
+        }, { signal });
+      });
+      listEl.querySelectorAll('.projects-rename-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await this._handleRenameProject(btn.dataset.id);
+          await refreshList();
+        }, { signal });
+      });
+      listEl.querySelectorAll('.projects-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await this._handleDeleteProject(btn.dataset.id);
+          await refreshList();
+          if (!this._project) { closeDialog(); return; }
+        }, { signal });
+      });
+    };
+
+    newBtn.addEventListener('click', async () => {
+      if (this._projectBulkLock !== false && this._projectBulkLock !== true) return;
+      await this._handleCreateProject();
+      await refreshList();
+      attachHandlers();
+    }, { signal });
+    closeBtn.addEventListener('click', closeDialog, { signal });
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    }, { signal });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this._isDriveSyncing) closeDialog();
+    }, { signal });
+
+    dialog.classList.remove('hidden');
+    dialog.setAttribute('aria-hidden', 'false');
+    await this._renderProjectsList(listEl);
+    attachHandlers();
+    closeBtn.focus();
+  }
+
+  async _handleSwitchProject(projectId) {
+    if (this._project && this._project.projectId === projectId) return;
+    const canSwitch = await this._checkPendingBeforeSwitch(projectId);
+    if (!canSwitch) return;
+    await this.activateProject(projectId);
+  }
+
+  async _handleCreateProject() {
+    if (this._projectBulkLock !== false && this._projectBulkLock !== true) return;
+    this._projectBulkLock = 'creating';
+    try {
+      const name = prompt('Nombre del nuevo proyecto:');
+      if (!name || !name.trim()) { this._projectBulkLock = true; return; }
+      if (this._project) {
+        const canSwitch = await this._checkPendingBeforeSwitch(null);
+        if (!canSwitch) { this._projectBulkLock = true; return; }
+      }
+      const project = createProject(name.trim());
+      await this._storage.createProjectAndSetActive(project);
+      await this.activateProject(project.projectId);
+    } finally {
+      if (this._projectBulkLock === 'creating') this._projectBulkLock = true;
+    }
+  }
+
+  async _handleRenameProject(projectId) {
+    if (this._projectBulkLock !== false && this._projectBulkLock !== true) return;
+    this._projectBulkLock = 'renaming';
+    try {
+      const project = await this._storage.getProject(projectId);
+      if (!project) { this._projectBulkLock = true; return; }
+      const newName = prompt('Nuevo nombre del proyecto:', project.name);
+      if (!newName || !newName.trim()) { this._projectBulkLock = true; return; }
+      if (newName.trim() === project.name) { this._projectBulkLock = true; return; }
+      const now = getTimestamp();
+      project.name = newName.trim();
+      project.updatedAt = now;
+      project.syncMetadata.status = project.syncMetadata.status === 'synced' ? 'pending' : project.syncMetadata.status;
+      project.syncMetadata.lastLocalUpdate = now;
+      project.syncMetadata.errorMessage = null;
+      await this._storage.updateProject(project);
+      if (this._project && this._project.projectId === projectId) {
+        this._project = project;
+        document.getElementById('project-name').textContent = project.name;
+        if (this._activeSection === 'project') this._updateProjectSection();
+        this._status.update(this._project, this._drive.isConnected());
+      }
+      if (project.syncMetadata.status === 'pending' && project.syncMetadata.cloudProvider === 'google-drive') {
+        this._notifications.info('El nombre de la carpeta de Drive se actualizará en una fase posterior.');
+      }
+    } finally {
+      if (this._projectBulkLock === 'renaming') this._projectBulkLock = true;
+    }
+  }
+
+  async _handleDeleteProject(projectId) {
+    if (this._projectBulkLock !== false && this._projectBulkLock !== true) return;
+    this._projectBulkLock = 'deleting';
+    try {
+      const project = await this._storage.getProject(projectId);
+      if (!project) { this._projectBulkLock = true; return; }
+      const hasDevicesBackup = project.syncMetadata.cloudProvider === 'google-drive' && project.syncMetadata.status === 'synced';
+      const hasDevicesPedido = project.syncMetadata.status === 'pending' || project.syncMetadata.status === 'error';
+      let warn = '';
+      if (hasDevicesPedido) {
+        warn = 'ADVERTENCIA: Este proyecto tiene cambios que todavía no están respaldados en Drive. ';
+      }
+      let confirmMsg = `${warn}¿Eliminar "${project.name}" del dispositivo?\n\nSe borrará la copia local y todos sus productos e imágenes.`;
+      if (hasDevicesBackup) {
+        confirmMsg += '\n\nEl respaldo en Google Drive permanecerá intacto y podrás volver a abrirlo desde Drive.';
+      }
+      if (!confirm(confirmMsg)) { this._projectBulkLock = true; return; }
+      await this._storage.deleteProjectCascade(projectId);
+      if (this._project && this._project.projectId === projectId) {
+        const remaining = (await this._storage.listProjects())
+          .filter(p => p && typeof p.projectId === 'string' && p.projectId.trim());
+        if (remaining.length > 0) {
+          remaining.sort((a, b) => {
+            const da = a.updatedAt || a.createdAt || '';
+            const db2 = b.updatedAt || b.createdAt || '';
+            return db2.localeCompare(da);
+          });
+          await this.activateProject(remaining[0].projectId);
+        } else {
+          this._project = null;
+          await this._storage.setMetadata('activeProjectId', null);
+          this._showStartupScreen();
+        }
+      }
+    } finally {
+      if (this._projectBulkLock === 'deleting') this._projectBulkLock = true;
+    }
+  }
+
   _setupUI() {
     if (this._uiInitialized) return;
     this._uiInitialized = true;
@@ -406,6 +613,7 @@ class App {
     document.getElementById('open-drive-btn').addEventListener('click', () => this._handleOpenFromDrive());
     document.getElementById('disconnect-drive-btn').addEventListener('click', () => this._handleDisconnectDrive());
     document.getElementById('products-drive-btn').addEventListener('click', () => this._handleProductsDriveClick());
+    document.getElementById('manage-projects-btn').addEventListener('click', () => this._handleManageProjects());
 
     // Debounced resize handler for responsive renderer transitions
     let resizeTimer;

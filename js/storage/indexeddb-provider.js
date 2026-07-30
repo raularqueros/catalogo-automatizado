@@ -540,6 +540,46 @@ export class IndexedDbProvider extends StorageProvider {
       } catch (err) { reject(err); }
     });
   }
+
+  async deleteProjectCascade(projectId) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const db = await this._getDb();
+        const t = db.transaction(['projects', 'products', 'images', 'metadata'], 'readwrite');
+        const productsStore = t.objectStore('products');
+        const imagesStore = t.objectStore('images');
+        const projectIdx = productsStore.index('projectId');
+        const imagesProjectIdx = imagesStore.index('projectId');
+
+        const allProducts = await this._req(projectIdx.getAll(projectId));
+        const allImages = await this._req(imagesProjectIdx.getAll(projectId));
+        const productImageIds = new Set((allProducts || []).map(p => p.imageId).filter(Boolean));
+
+        for (const p of (allProducts || [])) {
+          productsStore.delete(p.id);
+        }
+
+        for (const img of (allImages || [])) {
+          if (!productImageIds.has(img.imageId)) {
+            imagesStore.delete(img.imageId);
+          }
+        }
+
+        t.objectStore('projects').delete(projectId);
+
+        const metaReq = t.objectStore('metadata').get('activeProjectId');
+        metaReq.onsuccess = () => {
+          if (metaReq.result && metaReq.result.value === projectId) {
+            t.objectStore('metadata').delete('activeProjectId');
+          }
+        };
+
+        t.oncomplete = () => resolve();
+        t.onerror = (e) => reject(_writeError('Error al eliminar proyecto', e, t));
+        t.onabort = (e) => reject(_writeError('Eliminación en cascada abortada', e, t));
+      } catch (err) { reject(err); }
+    });
+  }
 }
 
 // ─── Funciones helpers fuera de la clase ───
