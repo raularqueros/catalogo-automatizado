@@ -16,13 +16,28 @@ export class NotificationService {
     this._container = container;
   }
 
-  show(message, type = 'info', duration = 4000) {
+  show(message, type = 'info', duration = 4000, opts) {
     if (!this._container) return;
 
     const notification = document.createElement('div');
     notification.className = `notification notification--${type}`;
-    notification.textContent = message;
     notification.setAttribute('role', 'alert');
+
+    const text = document.createElement('span');
+    text.className = 'notification__text';
+    text.textContent = message;
+    notification.appendChild(text);
+
+    if (opts && opts.action && typeof opts.action.callback === 'function') {
+      const btn = document.createElement('button');
+      btn.className = 'notification__action';
+      btn.textContent = opts.action.label;
+      btn.addEventListener('click', () => {
+        opts.action.callback();
+        this._dismiss(notification);
+      });
+      notification.appendChild(btn);
+    }
 
     this._container.appendChild(notification);
 
@@ -37,8 +52,8 @@ export class NotificationService {
     }
   }
 
-  success(message) {
-    this.show(message, 'success');
+  success(message, opts) {
+    this.show(message, 'success', 4000, opts);
   }
 
   error(message) {

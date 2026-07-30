@@ -100,14 +100,50 @@ class App {
     const section = document.getElementById(`section-${sectionName}`);
     if (section) section.classList.remove('hidden');
 
-    document.querySelectorAll('.header-nav__btn').forEach(btn => {
+    document.querySelectorAll('.sidebar__btn, .bottom-bar__btn').forEach(btn => {
       const isActive = btn.dataset.section === sectionName;
-      btn.classList.toggle('header-nav__btn--active', isActive);
-      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      btn.classList.toggle('sidebar__btn--active', isActive);
+      btn.classList.toggle('bottom-bar__btn--active', isActive);
+      btn.setAttribute('aria-current', isActive ? 'page' : 'false');
     });
 
     if (sectionName === 'catalog') this._updateCatalogSummary();
     if (sectionName === 'project') this._updateProjectSection();
+    this._updateNavStatuses();
+  }
+
+  _updateNavStatuses() {
+    if (!this._project) return;
+    (async () => {
+      try {
+        const all = await this._productService.listProducts(this._project.projectId);
+        const active = all.filter(p => p.active !== false).length;
+        const elP = document.getElementById('nav-status-products');
+        const elC = document.getElementById('nav-status-catalog');
+        const elS = document.getElementById('nav-status-project');
+        if (elP) elP.textContent = all.length + ' agregados';
+        if (elC) elC.textContent = active > 0 ? 'Lista para exportar' : 'Sin productos';
+        const s = this._project.syncMetadata.status;
+        if (elS) {
+          if (s === 'synced') elS.textContent = 'Respaldado';
+          else if (s === 'pending') elS.textContent = 'Respaldo pendiente';
+          else if (s === 'error') elS.textContent = 'Error';
+          else elS.textContent = 'Solo local';
+        }
+        const dot = document.getElementById('sidebar-sync-dot');
+        if (dot) {
+          dot.className = 'sidebar__sync-dot';
+          if (s === 'pending') dot.classList.add('sidebar__sync-dot--pending');
+          else if (s === 'error') dot.classList.add('sidebar__sync-dot--error');
+        }
+        const bdot = document.getElementById('bottom-sync-dot');
+        if (bdot) {
+          bdot.className = 'bottom-bar__sync-dot';
+          if (s === 'pending') bdot.classList.add('bottom-bar__sync-dot--pending');
+          else if (s === 'error') bdot.classList.add('bottom-bar__sync-dot--error');
+        }
+      } catch (_) {}
+    })();
   }
 
   _openProductEditor(mode, product = null) {
@@ -586,8 +622,8 @@ class App {
   _setupUI() {
     if (this._uiInitialized) return;
     this._uiInitialized = true;
-    // Nav tabs
-    document.querySelectorAll('.header-nav__btn').forEach(btn => {
+    // Nav — sidebar + bottom bar
+    document.querySelectorAll('.sidebar__btn, .bottom-bar__btn').forEach(btn => {
       btn.addEventListener('click', () => this._setActiveSection(btn.dataset.section));
     });
 
@@ -937,38 +973,23 @@ class App {
   }
 
   _updateProjectSection() {
-    const pname = document.getElementById('project-section-name');
     const localEl = document.getElementById('project-local-status');
     const driveEl = document.getElementById('project-drive-status');
     const lastSync = document.getElementById('project-last-sync');
-    if (pname) pname.textContent = this._project ? this._project.name : '';
-    if (localEl && this._project) {
-      const s = this._project.syncMetadata.status;
-      if (s === 'pending' || s === 'error') {
-        localEl.textContent = 'Guardado localmente \u00b7 Respaldo en Drive pendiente';
-      } else {
-        localEl.textContent = 'Guardado localmente';
-      }
-    }
+    if (localEl) localEl.textContent = 'Guardado';
     if (driveEl) {
-      if (this._hasUnbackedDriveChanges()) {
-        driveEl.textContent = this._drive.isConnected()
-          ? 'Conectado \u00b7 Falta respaldar cambios'
-          : 'Desconectado \u00b7 Falta respaldar cambios';
-      } else if (this._project?.syncMetadata?.status === 'synced') {
-        driveEl.textContent = this._drive.isConnected()
-          ? 'Conectado \u00b7 Todos los cambios respaldados'
-          : 'Desconectado \u00b7 Último respaldo conservado';
-      } else {
-        driveEl.textContent = this._drive.isConnected() ? 'Conectado' : 'Sin respaldo remoto';
-      }
+      const connected = this._drive.isConnected();
+      const s = this._project ? this._project.syncMetadata.status : 'local';
+      if (connected && s === 'synced') driveEl.textContent = 'Respaldado';
+      else if (connected && (s === 'pending' || s === 'error')) driveEl.textContent = 'Respaldo pendiente';
+      else if (connected) driveEl.textContent = 'Conectado';
+      else if (s === 'synced') driveEl.textContent = 'Sin conexión';
+      else driveEl.textContent = 'Sin respaldo remoto';
     }
     if (lastSync) {
-      if (this._project && this._project.syncMetadata.lastCloudSync) {
-        lastSync.textContent = '\u00daltima sincronizaci\u00f3n: ' + new Date(this._project.syncMetadata.lastCloudSync).toLocaleString();
-      } else {
-        lastSync.textContent = '';
-      }
+      lastSync.textContent = (this._project && this._project.syncMetadata.lastCloudSync)
+        ? 'Último respaldo: ' + new Date(this._project.syncMetadata.lastCloudSync).toLocaleDateString()
+        : '';
     }
   }
 
@@ -985,8 +1006,29 @@ class App {
         if (elA) elA.textContent = active.length + ' activos';
         if (elC) elC.textContent = cats + ' categor\u00edas';
 
+        const exportBtn = document.getElementById('catalog-export-btn');
+        const configBar = document.getElementById('catalog-config-bar');
         const preview = document.getElementById('catalog-section-preview');
         if (!preview) return;
+
+        if (all.length === 0) {
+          if (exportBtn) exportBtn.classList.add('hidden');
+          if (configBar) configBar.classList.add('hidden');
+          preview.innerHTML = `<div class="empty-state" style="background:var(--color-surface);border-radius:var(--radius-md);padding:3rem 2rem;text-align:center;border:1px solid var(--color-border);margin:0"><p style="font-size:1.1rem;font-weight:600;color:var(--color-text);margin-bottom:0.5rem">Sin productos</p><p style="color:var(--color-text-secondary);margin-bottom:1rem">Agrega tu primer producto para comenzar a armar el cat\u00e1logo.</p><button class="btn btn--primary" id="catalog-empty-add-btn">Agregar primer producto</button></div>`;
+          document.getElementById('catalog-empty-add-btn')?.addEventListener('click', () => this._setActiveSection('products'));
+          return;
+        }
+
+        if (active.length === 0) {
+          if (exportBtn) exportBtn.classList.add('hidden');
+          if (configBar) configBar.classList.add('hidden');
+          preview.innerHTML = `<div class="empty-state" style="background:var(--color-surface);border-radius:var(--radius-md);padding:3rem 2rem;text-align:center;border:1px solid var(--color-border);margin:0"><p style="font-size:1.1rem;font-weight:600;color:var(--color-text);margin-bottom:0.5rem">No hay productos activos para mostrar</p><p style="color:var(--color-text-secondary);margin-bottom:1rem">Activa al menos un producto o agrega uno nuevo.</p><button class="btn btn--primary" id="catalog-inactive-btn">Ir a productos</button></div>`;
+          document.getElementById('catalog-inactive-btn')?.addEventListener('click', () => this._setActiveSection('products'));
+          return;
+        }
+
+        if (exportBtn) exportBtn.classList.remove('hidden');
+        if (configBar) configBar.classList.remove('hidden');
         const colsEl = document.querySelector('#catalog-config-bar .segmented-btn--active');
         const columns = colsEl ? parseInt(colsEl.dataset.value) : 3;
         const photo = document.getElementById('catalog-field-photo');
@@ -1249,7 +1291,9 @@ class App {
         this._notifications.success('Producto actualizado.');
       } else {
         await this._productService.createProduct(this._project.projectId, data, imageRecord);
-        this._notifications.success('Producto creado.');
+        this._notifications.success('Producto creado.', {
+          action: { label: 'Ver cat\u00e1logo', callback: () => this._setActiveSection('catalog') }
+        });
       }
       try { await this._refreshProducts(); await this._updateProjectAndStatus(); } catch (e) { console.warn(e); }
     } catch (err) {
@@ -1396,6 +1440,7 @@ class App {
       document.getElementById('result-count').textContent = `${filtered.length} de ${all.length} productos`;
       await this._list.render(filtered, this._viewMode);
       this._updateFiltersBadge();
+      this._updateNavStatuses();
     } catch (err) { console.error('Error al actualizar listado:', err); }
   }
 
@@ -1504,6 +1549,9 @@ class App {
       await this._printManager.print(catalogEl);
       confirmBtn.disabled = false;
       confirmBtn.textContent = 'Exportar PDF';
+      this._notifications.success('PDF generado correctamente.', {
+        action: { label: 'Respaldar proyecto', callback: () => this._setActiveSection('project') }
+      });
     };
 
     cancelBtn.addEventListener('click', close, { signal });
@@ -1576,6 +1624,7 @@ class App {
       this._syncBeforeUnloadGuard();
       this._form.refreshCategories(this._project);
       this._refreshFilterCategories();
+      this._updateNavStatuses();
     }
   }
 }

@@ -106,14 +106,40 @@
           <span class="header__project-name" id="project-name"></span>
         </div>
       </div>
-      <nav class="header-nav" aria-label="Navegaci&oacute;n principal">
-        <button class="header-nav__btn header-nav__btn--active" data-section="products" aria-pressed="true">Productos</button>
-        <button class="header-nav__btn" data-section="catalog" aria-pressed="false">Cat&aacute;logo</button>
-        <button class="header-nav__btn" data-section="project" aria-pressed="false">Proyecto</button>
-      </nav>
       <div id="storage-status" class="storage-status" role="status" aria-live="polite">Inicializando&hellip;</div>
     </div>
   </header>
+
+  <nav class="sidebar" id="app-sidebar" aria-label="Navegación principal">
+    <div class="sidebar__brand">
+      <svg class="sidebar__brand-icon" width="28" height="28" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect x="7" y="2" width="20" height="20" rx="6" fill="#2A2F45"/>
+        <rect x="4" y="8" width="20" height="20" rx="6" fill="#3A3F5C"/>
+        <rect x="1" y="14" width="20" height="19" rx="6" fill="#4F5DFF"/>
+        <path d="M8 23.5L10.5 26L15 21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="sidebar__brand-text">Catálogo Automatizado</span>
+    </div>
+    <div class="sidebar__project" id="project-name"></div>
+    <div class="sidebar__nav">
+      <button class="sidebar__btn sidebar__btn--active" data-section="products" aria-current="page">
+        <svg class="sidebar__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span class="sidebar__label">Productos</span>
+        <small class="sidebar__status" id="nav-status-products"></small>
+      </button>
+      <button class="sidebar__btn" data-section="catalog" aria-current="false">
+        <svg class="sidebar__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="sidebar__label">Vista previa y PDF</span>
+        <small class="sidebar__status" id="nav-status-catalog"></small>
+      </button>
+      <button class="sidebar__btn" data-section="project" aria-current="false">
+        <svg class="sidebar__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        <span class="sidebar__label">Guardado</span>
+        <span class="sidebar__sync-dot" id="sidebar-sync-dot"></span>
+        <small class="sidebar__status" id="nav-status-project"></small>
+      </button>
+    </div>
+  </nav>
 
   <main id="main-content" class="main-content hidden">
     <!-- Sección: Productos -->
@@ -247,40 +273,65 @@
     </section>
 
     <!-- Sección: Proyecto -->
-    <section id="section-project" class="app-section hidden" aria-label="Proyecto">
+    <section id="section-project" class="app-section hidden" aria-label="Guardado y respaldo">
       <div class="section-header">
         <div>
-          <h2 class="section-header__title">Proyecto</h2>
-          <p class="section-header__subtitle" id="project-subtitle">Tus datos se guardan primero en este navegador. Google Drive funciona como respaldo remoto adicional.</p>
+          <h2 class="section-header__title">Guardado y respaldo</h2>
+          <p class="section-header__subtitle" id="project-subtitle">Tu catálogo está seguro en este dispositivo.</p>
         </div>
       </div>
-      <div class="info-card info-card--project">
-        <p><strong>Nombre del proyecto</strong><span id="project-section-name"></span></p>
-        <p><strong>Estado local</strong><span id="project-local-status"></span></p>
-        <p><strong>Google Drive</strong><span id="project-drive-status"></span></p>
-        <p id="project-last-sync" class="info-card__note"></p>
-      </div>
-      <div class="project-actions">
-        <button class="btn btn--outline" id="manage-projects-btn" type="button">Mis proyectos</button>
-        <button class="btn btn--primary btn--with-drive hidden" id="save-drive-btn" type="button">
-          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
-          <span id="save-drive-label">Guardar en Drive</span>
-        </button>
-        <button class="btn btn--outline btn--with-drive hidden" id="open-drive-btn" type="button">
-          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
-          <span>Abrir desde Drive</span>
-        </button>
-        <button class="btn btn--outline btn--with-drive" id="connect-drive-btn" type="button">
-          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
-          <span id="connect-drive-label">Conectar Google Drive</span>
-        </button>
-        <button class="btn btn--outline btn--with-drive hidden" id="disconnect-drive-btn" type="button">
-          <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
-          <span>Desconectar Drive</span>
-        </button>
+      <div class="save-card">
+        <div class="save-card__row">
+          <span class="save-card__icon">&#10003;</span>
+          <span class="save-card__label">Este dispositivo</span>
+          <span class="save-card__value" id="project-local-status">Guardado</span>
+        </div>
+        <div class="save-card__row">
+          <span class="save-card__icon">&#9729;</span>
+          <span class="save-card__label">Google Drive</span>
+          <span class="save-card__value" id="project-drive-status">Sin respaldo remoto</span>
+        </div>
+        <div class="save-card__actions">
+          <button class="btn btn--primary btn--with-drive hidden" id="save-drive-btn" type="button">
+            <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+            <span id="save-drive-label">Guardar en Drive</span>
+          </button>
+          <button class="btn btn--outline btn--with-drive hidden" id="open-drive-btn" type="button">
+            <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+            <span>Abrir desde Drive</span>
+          </button>
+          <button class="btn btn--outline btn--with-drive" id="connect-drive-btn" type="button">
+            <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+            <span id="connect-drive-label">Conectar Google Drive</span>
+          </button>
+          <button class="btn btn--outline btn--with-drive hidden" id="disconnect-drive-btn" type="button">
+            <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
+            <span>Desconectar Drive</span>
+          </button>
+        </div>
+        <div class="save-card__footer">
+          <p id="project-last-sync" class="save-card__note"></p>
+          <button class="btn btn--small btn--outline" id="manage-projects-btn" type="button">Mis proyectos</button>
+        </div>
       </div>
     </section>
   </main>
+
+  <nav class="bottom-bar" id="app-bottom-bar" aria-label="Navegación principal">
+    <button class="bottom-bar__btn bottom-bar__btn--active" data-section="products" aria-current="page">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Productos</span>
+    </button>
+    <button class="bottom-bar__btn" data-section="catalog" aria-current="false" aria-label="Vista previa y PDF">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span>Catálogo</span>
+    </button>
+    <button class="bottom-bar__btn" data-section="project" aria-current="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+      <span>Guardado</span>
+      <span class="bottom-bar__sync-dot" id="bottom-sync-dot"></span>
+    </button>
+  </nav>
 
   <!-- Panel: Editor de producto -->
   <div id="product-editor-overlay" class="editor-overlay hidden" aria-hidden="true"></div>
