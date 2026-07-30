@@ -340,6 +340,7 @@ class App {
     this._updateUIForDriveState();
     this._status.update(this._project, this._drive.isConnected());
     this._syncBeforeUnloadGuard();
+    this._setupCatalogConfigBar();
 
     this._appReady = true;
     this._setStartupBusy(false, '');
@@ -605,7 +606,7 @@ class App {
     });
 
     // Catalog config button
-    document.getElementById('catalog-config-btn').addEventListener('click', () => this._handleCatalogConfig());
+    document.getElementById('catalog-export-btn').addEventListener('click', () => this._handleExportPDF());
 
     // Drive buttons
     document.getElementById('connect-drive-btn').addEventListener('click', () => this._handleConnectDrive());
@@ -975,11 +976,40 @@ class App {
     (async () => {
       try {
         const all = await this._productService.listProducts(this._project.projectId);
-        const active = all.filter(p => p.active !== false).length;
-        const cats = this._project.categories ? this._project.categories.length : 0;
-        document.getElementById('catalog-summary-products').textContent = 'Productos totales: ' + all.length;
-        document.getElementById('catalog-summary-active').textContent = 'Productos activos: ' + active;
-        document.getElementById('catalog-summary-categories').textContent = 'Categor\u00edas: ' + cats;
+        const active = all.filter(p => p.active !== false);
+        const cats = this._project.categories ? this._project.categories.filter(c => c && c.id).length : 0;
+        const elP = document.getElementById('catalog-summary-products');
+        const elA = document.getElementById('catalog-summary-active');
+        const elC = document.getElementById('catalog-summary-categories');
+        if (elP) elP.textContent = all.length + ' productos';
+        if (elA) elA.textContent = active.length + ' activos';
+        if (elC) elC.textContent = cats + ' categor\u00edas';
+
+        const preview = document.getElementById('catalog-section-preview');
+        if (!preview) return;
+        const colsEl = document.querySelector('#catalog-config-bar .segmented-btn--active');
+        const columns = colsEl ? parseInt(colsEl.dataset.value) : 3;
+        const photo = document.getElementById('catalog-field-photo');
+        const price = document.getElementById('catalog-field-price');
+        const desc = document.getElementById('catalog-field-desc');
+        const opts = {
+          columns,
+          showPhoto: photo ? photo.checked : true,
+          showPrice: price ? price.checked : true,
+          showDescription: desc ? (desc.checked && columns === 2) : false,
+          catalogTitle: '',
+          companyName: ''
+        };
+        const imageMap = new Map();
+        for (const p of active) {
+          if (p.imageId && !imageMap.has(p.imageId)) {
+            try { const r = await this._productService.getImage(p.imageId); if (r) imageMap.set(p.imageId, r); } catch (_) {}
+          }
+        }
+        const catalogEl = this._catalogBuilder.build(this._project, active, imageMap, opts);
+        await this._printManager.loadImages(imageMap, catalogEl);
+        preview.innerHTML = '';
+        preview.appendChild(catalogEl);
       } catch (_) {}
     })();
   }
@@ -1371,45 +1401,119 @@ class App {
 
   // ─── Cat\u00e1logo ───
 
-  _handleCatalogConfig() {
-    const dialog = document.getElementById('catalog-config-dialog');
+  _setupCatalogConfigBar() {
+    if (this._catalogConfigBarReady) return;
+    this._catalogConfigBarReady = true;
+    const bar = document.getElementById('catalog-config-bar');
+    if (!bar) return;
+
+    const descCheck = document.getElementById('catalog-field-desc');
+    const descLabel = document.getElementById('catalog-field-desc-label');
+    let currentColumns = 3;
+
+    const updateDescState = (cols) => {
+      if (cols === 2) {
+        descCheck.disabled = false;
+        descLabel.classList.remove('form-checkbox-label--disabled');
+      } else {
+        descCheck.checked = false;
+        descCheck.disabled = true;
+        descLabel.classList.add('form-checkbox-label--disabled');
+      }
+    };
+    updateDescState(3);
+
+    const refreshPreview = () => {
+      const active = currentColumns;
+      const photo = document.getElementById('catalog-field-photo').checked;
+      const price = document.getElementById('catalog-field-price').checked;
+      const desc = descCheck.checked && active === 2;
+      return { columns: active, showPhoto: photo, showPrice: price, showDescription: desc };
+    };
+
+    const render = async () => {
+      const opts = refreshPreview();
+      if (!this._project) return;
+      const all = await this._productService.listProducts(this._project.projectId);
+      const activeProducts = all.filter(p => p.active !== false).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      const imageMap = new Map();
+      for (const p of activeProducts) { if (p.imageId && !imageMap.has(p.imageId)) { try { const r = await this._productService.getImage(p.imageId); if (r) imageMap.set(p.imageId, r); } catch (_) {} } }
+      const catalogEl = this._catalogBuilder.build(this._project, activeProducts, imageMap, opts);
+      await this._printManager.loadImages(imageMap, catalogEl);
+      const preview = document.getElementById('catalog-section-preview');
+      if (preview) { preview.innerHTML = ''; preview.appendChild(catalogEl); }
+    };
+
+    bar.querySelectorAll('.segmented-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        bar.querySelectorAll('.segmented-btn').forEach(s => { s.classList.remove('segmented-btn--active'); s.setAttribute('aria-checked', 'false'); });
+        b.classList.add('segmented-btn--active');
+        b.setAttribute('aria-checked', 'true');
+        currentColumns = parseInt(b.dataset.value);
+        updateDescState(currentColumns);
+        render();
+      });
+    });
+
+    [document.getElementById('catalog-field-photo'), document.getElementById('catalog-field-price'), descCheck].forEach(el => {
+      if (el) el.addEventListener('change', () => render());
+    });
+  }
+
+  _handleExportPDF() {
+    const dialog = document.getElementById('catalog-export-dialog');
     const titleInput = document.getElementById('catalog-title');
-    const previewBtn = document.getElementById('catalog-preview-btn');
-    const cancelBtn = document.getElementById('catalog-config-cancel-btn');
+    const companyInput = document.getElementById('catalog-company');
+    const confirmBtn = document.getElementById('catalog-export-confirm-btn');
+    const cancelBtn = document.getElementById('catalog-export-cancel-btn');
     const previousFocus = document.activeElement;
-    if (this._catalogConfigAbort) this._catalogConfigAbort.abort();
-    this._catalogConfigAbort = new AbortController();
-    const { signal } = this._catalogConfigAbort;
+    if (this._catalogExportAbort) this._catalogExportAbort.abort();
+    this._catalogExportAbort = new AbortController();
+    const { signal } = this._catalogExportAbort;
+
     titleInput.value = this._project ? this._project.name : '';
-    dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden', 'false'); titleInput.focus();
+    companyInput.value = localStorage.getItem('_cat_company') || '';
 
     const close = () => {
       dialog.classList.add('hidden');
       dialog.setAttribute('aria-hidden', 'true');
-      this._catalogConfigAbort.abort();
-      this._catalogConfigAbort = null;
+      this._catalogExportAbort.abort();
+      this._catalogExportAbort = null;
       if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
     };
-    const onClose = () => close();
-    const onPreview = async () => {
-      const opts = {
-        showPrices: document.getElementById('catalog-show-prices').checked,
-        showDescriptions: document.getElementById('catalog-show-descriptions').checked,
-        showCodes: document.getElementById('catalog-show-codes').checked,
-        catalogTitle: document.getElementById('catalog-title').value,
-        companyName: document.getElementById('catalog-company').value
-      };
-      close();
-      await this._handleCatalogPreview(opts);
+
+    const onExport = async () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Generando…';
+      const company = companyInput.value.trim();
+      try { localStorage.setItem('_cat_company', company); } catch (_) {}
+      const colsEl = document.querySelector('#catalog-config-bar .segmented-btn--active');
+      const columns = colsEl ? parseInt(colsEl.dataset.value) : 3;
+      const showPhoto = document.getElementById('catalog-field-photo').checked;
+      const showPrice = document.getElementById('catalog-field-price').checked;
+      const showDesc = document.getElementById('catalog-field-desc').checked && columns === 2;
+      const opts = { columns, showPhoto, showPrice, showDescription: showDesc, catalogTitle: titleInput.value, companyName: company };
+      const products = await this._productService.listProducts(this._project.projectId);
+      const activeProducts = products.filter(p => p.active !== false).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      if (activeProducts.length === 0) { this._notifications.info('Agrega al menos un producto activo.'); confirmBtn.disabled = false; confirmBtn.textContent = 'Exportar PDF'; return; }
+      const imageMap = new Map();
+      for (const p of activeProducts) { if (p.imageId && !imageMap.has(p.imageId)) { const record = await this._productService.getImage(p.imageId); if (record) imageMap.set(p.imageId, record); } }
+      const catalogEl = this._catalogBuilder.build(this._project, activeProducts, imageMap, opts);
+      this._printManager._revokeAll();
+      await this._printManager.loadImages(imageMap, catalogEl);
+      await this._printManager.print(catalogEl);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Exportar PDF';
     };
-    cancelBtn.addEventListener('click', onClose, { signal });
-    previewBtn.addEventListener('click', onPreview, { signal });
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) close();
-    }, { signal });
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') close();
-    }, { signal });
+
+    cancelBtn.addEventListener('click', close, { signal });
+    confirmBtn.addEventListener('click', onExport, { signal });
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); }, { signal });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); }, { signal });
+
+    dialog.classList.remove('hidden');
+    dialog.setAttribute('aria-hidden', 'false');
+    titleInput.focus();
   }
 
   async _handleCatalogPreview(options) {
@@ -1440,7 +1544,7 @@ class App {
 
       const onExport = async () => {
         exportBtn.disabled = true;
-        exportBtn.textContent = 'Preparando PDF\u2026';
+        exportBtn.textContent = 'Generando PDF\u2026';
         exportBtn.setAttribute('aria-busy', 'true');
         try {
           this._printManager._revokeAll();
@@ -1448,6 +1552,7 @@ class App {
           await this._printManager.print(catalogEl);
         } catch (err) {
           console.error('Error al exportar:', err);
+          this._notifications.error('Error al generar el PDF. Intenta de nuevo.');
         } finally {
           exportBtn.disabled = false;
           exportBtn.textContent = 'Exportar PDF';
