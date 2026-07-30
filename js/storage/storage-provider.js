@@ -27,4 +27,5 @@ export class StorageProvider {
   async updateProductAtomic(options) { throw new Error('No implementado'); }
   async duplicateProductAtomic(newProduct, newImageRecord, projectId) { throw new Error('No implementado'); }
   async deleteProductAtomic(productId, projectId) { throw new Error('No implementado'); }
+  async deleteProjectCascade(projectId) { throw new Error('No implementado'); }
 }

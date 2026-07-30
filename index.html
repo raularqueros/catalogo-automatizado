@@ -246,6 +246,7 @@
         <p id="project-last-sync" class="info-card__note"></p>
       </div>
       <div class="project-actions">
+        <button class="btn btn--outline" id="manage-projects-btn" type="button">Mis proyectos</button>
         <button class="btn btn--primary btn--with-drive hidden" id="save-drive-btn" type="button">
           <svg class="drive-logo" viewBox="0 0 87 75" aria-hidden="true"><use href="#google-drive-mark"></use></svg>
           <span id="save-drive-label">Guardar en Drive</span>
@@ -383,6 +384,19 @@
       <div class="dialog__actions">
         <button id="drive-open-confirm-btn" class="btn btn--primary hidden" type="button" disabled>Abrir proyecto</button>
         <button id="drive-open-cancel-btn" class="btn btn--outline" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="projects-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Mis proyectos">
+    <div class="dialog dialog--wide">
+      <h2 class="dialog__title">Mis proyectos</h2>
+      <div class="dialog__body">
+        <ul id="projects-list" class="projects-list" role="list" aria-label="Proyectos locales"></ul>
+      </div>
+      <div class="dialog__actions dialog__actions--spread">
+        <button id="new-project-btn" class="btn btn--primary" type="button">Nuevo proyecto</button>
+        <button id="projects-close-btn" class="btn btn--outline" type="button">Cerrar</button>
       </div>
     </div>
   </div>
