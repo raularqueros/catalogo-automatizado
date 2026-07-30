@@ -162,6 +162,8 @@ class App {
     panel.setAttribute('aria-hidden', 'false');
     this._editorOpen = true;
     document.getElementById('product-name').focus();
+    const fab = document.getElementById('fab-add-product');
+    if (fab) fab.classList.add('fab--hidden');
   }
 
   _closeProductEditor() {
@@ -172,6 +174,8 @@ class App {
       document.getElementById('product-editor').setAttribute('aria-hidden', 'true');
       this._editorOpen = false;
       this._form.reset();
+      const fab = document.getElementById('fab-add-product');
+      if (fab) fab.classList.remove('fab--hidden');
       if (this._lastFocusedElement) {
         this._lastFocusedElement.focus();
         this._lastFocusedElement = null;
