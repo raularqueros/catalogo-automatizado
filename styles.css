@@ -3462,3 +3462,45 @@ img {
     font-size: 6pt;
   }
 }
+
+/* ── UX 2A: simplified products ── */
+
+.fab {
+  display: none;
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  right: var(--spacing-md);
+  z-index: 85;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(79,93,255,0.5);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: transform 150ms, box-shadow 150ms;
+}
+
+.fab:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(79,93,255,0.6); }
+.fab:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+@media (max-width: 1023.98px) {
+  .fab { display: flex; }
+}
+
+/* Compact header */
+
+.section-header__count {
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 1023.98px) {
+  .section-header--products .section-header__subtitle { display: none; }
+  .section-header--products .section-header__actions { flex-wrap: wrap; gap: var(--spacing-xs); }
+  .section-header--products .list-toolbar__search-wrap { flex: 1; min-width: 140px; }
+}

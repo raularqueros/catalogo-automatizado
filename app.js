@@ -630,8 +630,10 @@ class App {
     // Product editor buttons
     const newProductBtn = document.getElementById('new-product-btn');
     const emptyAddBtn = document.getElementById('empty-add-btn');
+    const fabAddBtn = document.getElementById('fab-add-product');
     newProductBtn.addEventListener('click', () => this._openProductEditor('create'));
     if (emptyAddBtn) emptyAddBtn.addEventListener('click', () => this._openProductEditor('create'));
+    if (fabAddBtn) fabAddBtn.addEventListener('click', () => this._openProductEditor('create'));
     document.getElementById('editor-close-btn').addEventListener('click', () => this._closeProductEditor());
     document.getElementById('cancel-btn').addEventListener('click', () => this._closeProductEditor());
     document.getElementById('product-editor-overlay').addEventListener('click', () => this._closeProductEditor());
