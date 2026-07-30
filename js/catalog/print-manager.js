@@ -1,3 +1,5 @@
+import { CatalogBuilder } from './catalog-builder.js?v=20260729-final-integration-v1';
+
 export class PrintManager {
   constructor() {
     this._blobUrls = [];
@@ -38,10 +40,6 @@ export class PrintManager {
     }
   }
 
-  /**
-   * Mueve el catálogo al contenedor exclusivo de impresión,
-   * oculta toda la interfaz, ejecuta window.print() y restaura.
-   */
   async print(catalogElement) {
     if (this._isPrinting) return;
     this._isPrinting = true;
@@ -49,21 +47,29 @@ export class PrintManager {
     const printRoot = document.getElementById('catalog-print-root');
     if (!printRoot) {
       this._isPrinting = false;
-      window.print();
       return;
     }
 
-    // Vaciar y poblar el contenedor de impresión
     printRoot.innerHTML = '';
-    printRoot.appendChild(catalogElement.cloneNode(true));
+    printRoot.appendChild(catalogElement);
 
-    // Ocultar diálogos abiertos que puedan filtrarse
-    document.querySelectorAll('.dialog-overlay').forEach(d => d.classList.add('hidden'));
+    document.querySelectorAll('.dialog-overlay, .editor-overlay').forEach(d => d.classList.add('hidden'));
 
     document.body.classList.add('catalog-printing');
 
     try {
-      window.print();
+      await new Promise(resolve => {
+        const afterPrint = () => {
+          window.removeEventListener('afterprint', afterPrint);
+          resolve();
+        };
+        window.addEventListener('afterprint', afterPrint);
+        window.print();
+        setTimeout(() => {
+          window.removeEventListener('afterprint', afterPrint);
+          resolve();
+        }, 2000);
+      });
     } finally {
       document.body.classList.remove('catalog-printing');
       printRoot.innerHTML = '';

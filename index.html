@@ -219,16 +219,31 @@
       <div class="section-header">
         <div>
           <h2 class="section-header__title">Cat&aacute;logo</h2>
-          <p class="section-header__subtitle">Configura y genera un cat&aacute;logo usando tus productos activos</p>
+          <p class="section-header__subtitle">Vista previa del cat&aacute;logo para exportar a PDF</p>
         </div>
-        <button class="btn btn--primary" id="catalog-config-btn" type="button">Configurar cat&aacute;logo</button>
+        <button class="btn btn--primary" id="catalog-export-btn" type="button">Exportar PDF</button>
       </div>
-      <div class="info-card info-card--summary">
-        <p id="catalog-summary-products" class="info-card__metric">Productos totales: 0</p>
-        <p id="catalog-summary-active" class="info-card__metric">Productos activos: 0</p>
-        <p id="catalog-summary-categories" class="info-card__metric">Categor&iacute;as: 0</p>
-        <p class="info-card__note">La exportaci&oacute;n PDF contin&uacute;a como funci&oacute;n experimental.</p>
+      <div id="catalog-summary-bar" class="catalog-summary-bar">
+        <span id="catalog-summary-products">0 productos</span>
+        <span id="catalog-summary-active">0 activos</span>
+        <span id="catalog-summary-categories">0 categorías</span>
       </div>
+      <div id="catalog-config-bar" class="catalog-config-bar">
+        <div class="catalog-config-bar__group">
+          <span class="catalog-config-bar__label">Columnas</span>
+          <div class="segmented-control" role="radiogroup" aria-label="Productos por fila">
+            <button class="segmented-btn segmented-btn--first" data-value="2" type="button" role="radio" aria-checked="false">2</button>
+            <button class="segmented-btn segmented-btn--active" data-value="3" type="button" role="radio" aria-checked="true">3</button>
+            <button class="segmented-btn segmented-btn--last" data-value="4" type="button" role="radio" aria-checked="false">4</button>
+          </div>
+        </div>
+        <div class="catalog-config-bar__group catalog-config-bar__toggles">
+          <label class="form-checkbox-label"><input type="checkbox" id="catalog-field-photo" checked> Foto</label>
+          <label class="form-checkbox-label"><input type="checkbox" id="catalog-field-price" checked> Precio</label>
+          <label class="form-checkbox-label" id="catalog-field-desc-label"><input type="checkbox" id="catalog-field-desc"> Descripción</label>
+        </div>
+      </div>
+      <div id="catalog-section-preview" class="catalog-section-preview"></div>
     </section>
 
     <!-- Sección: Proyecto -->
@@ -343,20 +358,17 @@
     </div>
   </div>
 
-  <!-- Diálogos del catálogo (config y preview) sin cambios -->
-  <div id="catalog-config-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Configurar cat&aacute;logo">
+  <!-- Diálogo: Exportar catálogo PDF -->
+  <div id="catalog-export-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-label="Exportar catálogo PDF">
     <div class="dialog">
-      <h2 class="dialog__title">Configurar cat&aacute;logo</h2>
+      <h2 class="dialog__title">Exportar catálogo PDF</h2>
       <div class="dialog__body">
-        <div class="form-group"><label for="catalog-title" class="form-label">Nombre del cat&aacute;logo</label><input type="text" id="catalog-title" class="form-input"></div>
         <div class="form-group"><label for="catalog-company" class="form-label">Nombre de la empresa</label><input type="text" id="catalog-company" class="form-input" placeholder="Ej: Mi Empresa Ltda."></div>
-        <div class="form-group"><label class="form-checkbox-label"><input type="checkbox" id="catalog-show-prices" checked> Mostrar precios</label></div>
-        <div class="form-group"><label class="form-checkbox-label"><input type="checkbox" id="catalog-show-descriptions" checked> Mostrar descripciones</label></div>
-        <div class="form-group"><label class="form-checkbox-label"><input type="checkbox" id="catalog-show-codes"> Mostrar c&oacute;digos</label></div>
+        <div class="form-group"><label for="catalog-title" class="form-label">Nombre del catálogo</label><input type="text" id="catalog-title" class="form-input"></div>
       </div>
       <div class="dialog__actions">
-        <button id="catalog-preview-btn" class="btn btn--primary" type="button">Vista previa</button>
-        <button id="catalog-config-cancel-btn" class="btn btn--outline" type="button">Cancelar</button>
+        <button id="catalog-export-confirm-btn" class="btn btn--primary" type="button">Exportar PDF</button>
+        <button id="catalog-export-cancel-btn" class="btn btn--outline" type="button">Cancelar</button>
       </div>
     </div>
   </div>
